@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 // ─── Phrase banks ──────────────────────────────────────────────────────────────
 const WHAT = [
@@ -51,99 +51,122 @@ function buildParagraph(w: string, y: string, o: string, h: string) {
 }
 
 // ─── Grid ──────────────────────────────────────────────────────────────────────
-const COLS = 26;
-const ROWS = 30;
-const NOTE = 16;   // note side length px
-const GAP  = 2;    // gap between notes
-const CELL = NOTE + GAP;              // 18 px per cell
-const CW   = COLS * CELL;            // 468 px canvas width
-const CH   = ROWS * CELL;            // 540 px canvas height
+const COLS = 13;
+const ROWS = 16;
+const NOTE = 28;   // note size px
+const GAP  = 5;    // gap between notes
+const CELL = NOTE + GAP;  // 33 px
+const CW   = COLS * CELL; // 429 px
+const CH   = ROWS * CELL; // 528 px
 
 // ─── Physics ───────────────────────────────────────────────────────────────────
-const SPRING   = 0.06;
+const SPRING   = 0.058;
 const DAMP     = 0.78;
-const SCATTER  = 0.5;   // impulse scale from motion magnitude
-const MOT_THR  = 8;     // avg-pixel-diff threshold to fire scatter + phrase change
-const CHANGE_COOLDOWN = 1500; // ms between phrase updates
+const SCATTER  = 0.42;
+const MOT_THR  = 8;
+const CHANGE_COOLDOWN = 1600; // ms between phrase updates
+const LIFT_THRESHOLD  = 0.40; // opacity above this → note lifts
 
-// ─── Colours (quadrant-based: TL yellow, TR pink, BL blue, BR green) ──────────
-const COLORS: [number, number, number][] = [
-  [255, 252, 155],
-  [255, 204, 218],
-  [175, 215, 255],
-  [180, 243, 198],
+// ─── Colour palette — mixed randomly per note ─────────────────────────────────
+const PALETTE: [number, number, number][] = [
+  [255, 251, 140],  // yellow
+  [255, 203, 216],  // pink
+  [172, 213, 255],  // blue
+  [178, 242, 196],  // green
+  [255, 226, 154],  // warm yellow
+  [248, 202, 255],  // lavender
+  [196, 244, 226],  // mint
+  [255, 218, 172],  // peach
 ];
 
-interface Particle {
+// ─── Static particle shape (computed once) ────────────────────────────────────
+interface StaticNote {
   col: number; row: number;
-  tx: number;  ty: number;   // home position
-  x:  number;  y:  number;   // current position
-  vx: number;  vy: number;
-  angle: number;  restAngle: number;  va: number;
-  r: number; g: number; b: number;
-  opacity: number;  // 0–1 driven by inverted webcam brightness
+  tx: number; ty: number;
+  color: string;
+  restAngle: number; // radians
+}
+
+// ─── Mutable physics state (lives in a ref, never causes React re-renders) ───
+interface PhysState {
+  x: number; y: number;
+  vx: number; vy: number;
+  angle: number; va: number;
+  opacity: number;
+  lifted: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function StickyMirror() {
-  const displayRef  = useRef<HTMLCanvasElement>(null);
-  const sampleRef   = useRef<HTMLCanvasElement>(null);  // COLS×ROWS hidden canvas
-  const videoRef    = useRef<HTMLVideoElement>(null);
-  const particles   = useRef<Particle[]>([]);
-  const prevGray    = useRef<Uint8ClampedArray | null>(null);
-  const rafId       = useRef<number | null>(null);
-  const streamRef   = useRef<MediaStream | null>(null);
-  const lastChange  = useRef<number>(0);
+  // DOM refs — one pair per note, updated directly in the RAF loop
+  const outerRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const faceRefs  = useRef<(HTMLDivElement | null)[]>([]);
 
-  const [camState,  setCamState]  = useState<"requesting" | "active" | "denied">("requesting");
-  const [paragraph, setParagraph] = useState(buildParagraph(WHAT[0], WHY[0], WHO[1], HOW[0]));
+  // Webcam sampling
+  const sampleRef = useRef<HTMLCanvasElement>(null);
+  const videoRef  = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Physics state array (mutable, not React state)
+  const physRef = useRef<PhysState[]>([]);
+
+  // Frame loop
+  const rafId     = useRef<number | null>(null);
+  const prevGray  = useRef<Uint8ClampedArray | null>(null);
+  const lastChange = useRef<number>(0);
+
+  const [camState,    setCamState]    = useState<"requesting" | "active" | "denied">("requesting");
+  const [paragraph,   setParagraph]   = useState(buildParagraph(WHAT[0], WHY[0], WHO[1], HOW[0]));
   const [paraVisible, setParaVisible] = useState(true);
 
-  // ── Init particles ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    const ps: Particle[] = [];
+  // ── Generate static note data once ─────────────────────────────────────────
+  const notes = useMemo<StaticNote[]>(() => {
+    const result: StaticNote[] = [];
     for (let row = 0; row < ROWS; row++) {
       for (let col = 0; col < COLS; col++) {
-        const tx = col * CELL;
-        const ty = row * CELL;
-        const qx = col >= COLS / 2 ? 1 : 0;
-        const qy = row >= ROWS / 2 ? 1 : 0;
-        const [r, g, b] = COLORS[qy * 2 + qx];
-        const restAngle = ((Math.random() - 0.5) * 10 * Math.PI) / 180;
-        ps.push({
-          col, row, tx, ty,
-          x: tx, y: ty,
-          vx: 0, vy: 0,
-          angle: restAngle, restAngle, va: 0,
-          r, g, b,
-          opacity: 0.12,
+        const [r, g, b] = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+        result.push({
+          col, row,
+          tx: col * CELL,
+          ty: row * CELL,
+          color: `rgb(${r},${g},${b})`,
+          restAngle: ((Math.random() - 0.5) * 9 * Math.PI) / 180,
         });
       }
     }
-    particles.current = ps;
+    return result;
   }, []);
 
-  // ── Phrase update triggered by motion ──────────────────────────────────────
-  const updatePhrases = useCallback((motionCx: number, motionCy: number) => {
+  // ── Init physics state to match static data ─────────────────────────────────
+  useEffect(() => {
+    physRef.current = notes.map(n => ({
+      x: n.tx, y: n.ty,
+      vx: 0, vy: 0,
+      angle: n.restAngle, va: 0,
+      opacity: 0.1,
+      lifted: false,
+    }));
+    outerRefs.current = new Array(notes.length).fill(null);
+    faceRefs.current  = new Array(notes.length).fill(null);
+  }, [notes]);
+
+  // ── Phrase update on motion ─────────────────────────────────────────────────
+  const updatePhrases = useCallback((cx: number, cy: number) => {
     const now = Date.now();
     if (now - lastChange.current < CHANGE_COOLDOWN) return;
     lastChange.current = now;
 
-    // Map motion centroid (in canvas-space 0..1) to phrase indices
-    const nx = motionCx / CW;
-    const ny = motionCy / CH;
+    const nx = Math.max(0, Math.min(1, cx / CW));
+    const ny = Math.max(0, Math.min(1, cy / CH));
+
     const wi = Math.floor(nx * WHAT.length) % WHAT.length;
-    const yi = Math.floor(ny * WHY.length) % WHY.length;
+    const yi = Math.floor(ny * WHY.length)  % WHY.length;
     const oi = Math.floor(((nx + ny) / 2) * WHO.length) % WHO.length;
-    const hi = Math.floor(((nx * 0.6 + (1 - ny) * 0.4)) * HOW.length) % HOW.length;
+    const hi = Math.floor((nx * 0.6 + (1 - ny) * 0.4) * HOW.length) % HOW.length;
 
     const text = buildParagraph(WHAT[wi], WHY[yi], WHO[oi], HOW[hi]);
-
     setParaVisible(false);
-    setTimeout(() => {
-      setParagraph(text);
-      setParaVisible(true);
-    }, 200);
+    setTimeout(() => { setParagraph(text); setParaVisible(true); }, 200);
   }, []);
 
   // ── Webcam ──────────────────────────────────────────────────────────────────
@@ -167,12 +190,9 @@ export function StickyMirror() {
   // ── Animation loop ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (camState !== "active") return;
-
-    const display = displayRef.current!;
-    const sample  = sampleRef.current!;
-    const video   = videoRef.current!;
-    const ctx     = display.getContext("2d")!;
-    const sCtx    = sample.getContext("2d", { willReadFrequently: true })!;
+    const sample = sampleRef.current!;
+    const video  = videoRef.current!;
+    const sCtx   = sample.getContext("2d", { willReadFrequently: true })!;
 
     const loop = () => {
       // 1. Sample webcam into COLS×ROWS grid (mirrored)
@@ -183,21 +203,18 @@ export function StickyMirror() {
       sCtx.restore();
       const { data } = sCtx.getImageData(0, 0, COLS, ROWS);
 
-      // Convert to grayscale
       const gray = new Uint8ClampedArray(COLS * ROWS);
       for (let i = 0; i < COLS * ROWS; i++) {
         gray[i] = data[i * 4] * 0.299 + data[i * 4 + 1] * 0.587 + data[i * 4 + 2] * 0.114;
       }
 
       // 2. Motion detection
-      let motionSum = 0;
-      let motionCx = CW / 2, motionCy = CH / 2, motionCount = 0;
-
+      let motionSum = 0, motionCx = CW / 2, motionCy = CH / 2, motionCount = 0;
       if (prevGray.current) {
         for (let i = 0; i < gray.length; i++) {
           const diff = Math.abs(gray[i] - prevGray.current[i]);
           motionSum += diff;
-          if (diff > 25) {
+          if (diff > 28) {
             motionCx += (i % COLS) * CELL + CELL / 2;
             motionCy += Math.floor(i / COLS) * CELL + CELL / 2;
             motionCount++;
@@ -208,61 +225,56 @@ export function StickyMirror() {
       prevGray.current = gray.slice();
 
       const motionMag = motionSum / gray.length;
-      const moving    = motionMag > MOT_THR;
-
-      // 3. Trigger phrase update on significant motion
+      const moving = motionMag > MOT_THR;
       if (moving) updatePhrases(motionCx, motionCy);
 
-      // 4. Update particle opacities from webcam brightness (inverted)
-      const ps = particles.current;
-      for (const p of ps) {
-        const gv = gray[p.row * COLS + p.col];
-        // Dark face/hair features → high opacity; bright background → transparent
-        const target = Math.max(0.04, (210 - gv) / 210);
-        p.opacity += (target - p.opacity) * 0.10;
-      }
+      // 3. Update each note's physics + DOM
+      const phys  = physRef.current;
+      const ns    = notes;
 
-      // 5. Physics
-      for (const p of ps) {
+      for (let i = 0; i < phys.length; i++) {
+        const p = phys[i];
+        const n = ns[i];
+
+        // Opacity from inverted brightness (dark face = visible note)
+        const gv = gray[n.row * COLS + n.col];
+        const targetOp = Math.max(0.04, (220 - gv) / 220);
+        p.opacity += (targetOp - p.opacity) * 0.10;
+
+        // Scatter impulse on motion
         if (moving) {
-          const kick = Math.min(motionMag * SCATTER, 20);
+          const kick = Math.min(motionMag * SCATTER, 18);
           p.vx += (Math.random() - 0.5) * kick;
           p.vy += (Math.random() - 0.5) * kick;
-          p.va += (Math.random() - 0.5) * 0.4;
+          p.va += (Math.random() - 0.5) * 0.38;
         }
-        // Spring toward home
-        p.vx += -SPRING * (p.x - p.tx);
-        p.vy += -SPRING * (p.y - p.ty);
-        p.va += -SPRING * (p.angle - p.restAngle);
-        // Damp
+
+        // Spring toward home position
+        p.vx += -SPRING * (p.x - n.tx);
+        p.vy += -SPRING * (p.y - n.ty);
+        p.va += -SPRING * (p.angle - n.restAngle);
+
+        // Damping
         p.vx *= DAMP; p.vy *= DAMP; p.va *= DAMP;
         p.x  += p.vx; p.y  += p.vy; p.angle += p.va;
-      }
 
-      // 6. Render — plain background, notes only (no webcam feed)
-      ctx.clearRect(0, 0, CW, CH);
+        // ── Direct DOM update (no React re-render) ──────────────────────
+        const outer = outerRefs.current[i];
+        const face  = faceRefs.current[i];
 
-      for (const p of ps) {
-        ctx.save();
-        ctx.globalAlpha = p.opacity;
-        ctx.translate(p.x + NOTE / 2, p.y + NOTE / 2);
-        ctx.rotate(p.angle);
+        if (outer) {
+          outer.style.transform = `translate(${p.x}px,${p.y}px) rotate(${p.angle}rad)`;
+          outer.style.opacity   = String(Math.max(0, Math.min(1, p.opacity)));
+        }
 
-        ctx.shadowColor    = "rgba(0,0,0,0.18)";
-        ctx.shadowBlur     = 4;
-        ctx.shadowOffsetX  = 1;
-        ctx.shadowOffsetY  = 2;
-
-        ctx.fillStyle = `rgb(${p.r},${p.g},${p.b})`;
-        ctx.fillRect(-NOTE / 2, -NOTE / 2, NOTE, NOTE);
-
-        // Tape strip
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = p.opacity * 0.3;
-        ctx.fillStyle = "rgba(255,255,255,0.9)";
-        ctx.fillRect(-NOTE / 2, -NOTE / 2, NOTE, 3);
-
-        ctx.restore();
+        // Toggle 'lifted' class when crossing the brightness threshold
+        if (face) {
+          const shouldLift = p.opacity > LIFT_THRESHOLD;
+          if (shouldLift !== p.lifted) {
+            p.lifted = shouldLift;
+            face.classList.toggle("lifted", shouldLift);
+          }
+        }
       }
 
       rafId.current = requestAnimationFrame(loop);
@@ -270,13 +282,50 @@ export function StickyMirror() {
 
     rafId.current = requestAnimationFrame(loop);
     return () => { if (rafId.current) cancelAnimationFrame(rafId.current); };
-  }, [camState, updatePhrases]);
+  }, [camState, notes, updatePhrases]);
 
   return (
     <main
       style={{ fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }}
-      className="min-h-screen bg-[#f7f6f3] text-[#111] flex flex-col items-center"
+      className="min-h-screen bg-[#f7f6f3] flex flex-col items-center"
     >
+      {/* ── Corner-fold CSS ── */}
+      <style>{`
+        .note-face {
+          width: ${NOTE}px;
+          height: ${NOTE}px;
+          position: relative;
+          border-radius: 1px;
+          /* chamfer the bottom-right corner to make room for the fold */
+          clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+          box-shadow: 1px 2px 4px rgba(0,0,0,0.09), inset 0 1px 0 rgba(255,255,255,0.55);
+          transition:
+            transform     0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+            box-shadow    0.5s ease,
+            clip-path     0.5s ease;
+        }
+        /* The folded corner triangle */
+        .note-face::after {
+          content: '';
+          position: absolute;
+          bottom: 0; right: 0;
+          width: 8px; height: 8px;
+          background: rgba(80,60,30,0.12);
+          clip-path: polygon(100% 0, 100% 100%, 0 100%);
+          transition: width 0.5s ease, height 0.5s ease, background 0.5s ease;
+        }
+        /* Lifted state — note flicks up, corner peels further */
+        .note-face.lifted {
+          transform: translateY(-6px) scale(1.04);
+          clip-path: polygon(0 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%);
+          box-shadow: 3px 8px 14px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.55);
+        }
+        .note-face.lifted::after {
+          width: 13px; height: 13px;
+          background: rgba(80,60,30,0.20);
+        }
+      `}</style>
+
       {/* Studio name */}
       <header className="w-full text-center pt-9 pb-5">
         <span className="text-[0.65rem] tracking-[0.32em] uppercase text-[#999] font-medium">
@@ -284,51 +333,53 @@ export function StickyMirror() {
         </span>
       </header>
 
-      {/* Sticky note canvas */}
-      <div className="px-8 w-full flex flex-col items-center">
+      <div className="flex flex-col items-center px-8 w-full">
+        {/* Camera states */}
         {camState === "denied" && (
-          <div className="flex flex-col items-center gap-4 py-14 text-center">
-            <div className="grid grid-cols-2 gap-2 opacity-35">
-              {COLORS.map(([r, g, b], i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: 60, height: 60,
-                    background: `rgb(${r},${g},${b})`,
-                    borderRadius: 2,
-                    transform: `rotate(${(i % 2 === 0 ? 1 : -1) * 3}deg)`,
-                  }}
-                />
-              ))}
-            </div>
-            <p className="text-sm text-[#999] mt-2">Allow camera access to see your reflection.</p>
+          <div className="py-14 text-sm text-[#999] text-center">
+            Allow camera access to see your reflection.
           </div>
         )}
-
         {camState === "requesting" && (
           <p className="py-12 text-sm text-[#bbb]">Waiting for camera…</p>
         )}
 
-        <canvas
-          ref={displayRef}
-          width={CW}
-          height={CH}
+        {/* Note grid — absolutely positioned notes inside a relative container */}
+        <div
           className={camState === "active" ? "block" : "hidden"}
-        />
+          style={{ position: "relative", width: CW, height: CH, flexShrink: 0 }}
+        >
+          {notes.map((n, i) => (
+            <div
+              key={i}
+              ref={el => { outerRefs.current[i] = el; }}
+              style={{
+                position: "absolute",
+                top: 0, left: 0,
+                willChange: "transform, opacity",
+              }}
+            >
+              <div
+                ref={el => { faceRefs.current[i] = el; }}
+                className="note-face"
+                style={{ background: n.color }}
+              />
+            </div>
+          ))}
+        </div>
 
         {/* Divider */}
         <div className="w-10 h-px bg-[#ddd] my-7" />
 
-        {/* Live paragraph — updates when you move */}
+        {/* Live manifesto paragraph */}
         <p
-          className="text-[0.88rem] leading-[1.85] text-[#444] font-light italic text-center max-w-md transition-opacity duration-200"
+          className="text-[0.88rem] leading-[1.85] text-[#444] font-light italic text-center max-w-sm transition-opacity duration-200"
           style={{ opacity: paraVisible ? 1 : 0 }}
         >
           "{paragraph}"
         </p>
 
-        {/* Hint */}
-        <p className="text-[0.58rem] tracking-[0.25em] uppercase text-[#c0c0c0] font-medium mt-8 mb-10">
+        <p className="text-[0.58rem] tracking-[0.25em] uppercase text-[#c0c0c0] font-medium mt-7 mb-10">
           move to scatter · still to reform
         </p>
       </div>
