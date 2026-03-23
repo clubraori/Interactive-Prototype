@@ -1,64 +1,105 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
-// ─── Grid configuration ───────────────────────────────────────────────────────
-// The sticky note portrait is a COLS × ROWS grid of particles.
-// Each particle maps to one sampled webcam pixel.
-const COLS = 24;
-const ROWS = 28;
-const NOTE_W = 18;   // each note's width in px
-const NOTE_H = 18;   // each note's height in px
-const GAP = 3;       // gap between notes
-const CELL = NOTE_W + GAP;           // 21px per cell
-const CANVAS_W = COLS * CELL;        // 504px
-const CANVAS_H = ROWS * CELL;        // 588px
-
-// ─── Physics constants ────────────────────────────────────────────────────────
-const SPRING_K = 0.055;    // spring stiffness (toward target)
-const DAMPING = 0.80;      // velocity damping per frame
-const MOTION_THRESHOLD = 9; // average pixel diff that triggers scatter
-const SCATTER_STRENGTH = 0.4; // impulse multiplier from motion magnitude
-
-// ─── Sticky note colour palette ───────────────────────────────────────────────
-// Quadrant-based: TL=yellow, TR=pink, BL=blue, BR=green
-const COLORS: [number, number, number][] = [
-  [255, 251, 168],  // pale yellow  (top-left)
-  [255, 207, 222],  // pale pink    (top-right)
-  [178, 218, 255],  // pale blue    (bottom-left)
-  [183, 243, 202],  // pale green   (bottom-right)
+// ─── Phrase banks ──────────────────────────────────────────────────────────────
+const WHAT = [
+  "interdisciplinary design",
+  "innovative design",
+  "gathering creative communities",
+  "art and science collaborations",
+  "creative strategies",
+  "cultural and public engagement",
+  "research-oriented collaboration",
+  "creative producing",
+  "building new possibilities across art, design, culture, and technology",
+];
+const WHY = [
+  "realising the potential of art and science collaborations",
+  "unlocking creative potential",
+  "organising and activating creative energy",
+  "empowering action through creative strategies",
+  "building equitable processes",
+  "bringing ideas to life",
+  "generating empathy and goodwill within communities",
+  "embedding responsible design frameworks",
+  "creating meaningful public intersections",
+];
+const WHO = [
+  "partners and stakeholders",
+  "audiences and communities",
+  "cultural institutions",
+  "artists and creatives",
+  "academic institutions and incubators",
+  "public-facing organisations",
+  "innovative institutions",
+  "learners and students",
+  "communities working at the intersection of creativity and impact",
+];
+const HOW = [
+  "a creative-producing framework",
+  "interdisciplinary thinking",
+  "art-thinking and design-thinking",
+  "facilitation and co-design",
+  "hands-on, interactive processes",
+  "dialogue with stakeholders",
+  "empathy and care",
+  "process-oriented collaboration",
+  "a distributed studio model blending consultancy, collective practice, and research",
 ];
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+function buildParagraph(w: string, y: string, o: string, h: string) {
+  return `We at Alchemy Unlimited are a collection of creative alchemists interested in ${w}. We are committed to ${y} for ${o}. We approach our work through ${h}, providing insight within and beyond the immediate brief.`;
+}
+
+// ─── Grid ──────────────────────────────────────────────────────────────────────
+const COLS = 26;
+const ROWS = 30;
+const NOTE = 16;   // note side length px
+const GAP  = 2;    // gap between notes
+const CELL = NOTE + GAP;              // 18 px per cell
+const CW   = COLS * CELL;            // 468 px canvas width
+const CH   = ROWS * CELL;            // 540 px canvas height
+
+// ─── Physics ───────────────────────────────────────────────────────────────────
+const SPRING   = 0.06;
+const DAMP     = 0.78;
+const SCATTER  = 0.5;   // impulse scale from motion magnitude
+const MOT_THR  = 8;     // avg-pixel-diff threshold to fire scatter + phrase change
+const CHANGE_COOLDOWN = 1500; // ms between phrase updates
+
+// ─── Colours (quadrant-based: TL yellow, TR pink, BL blue, BR green) ──────────
+const COLORS: [number, number, number][] = [
+  [255, 252, 155],
+  [255, 204, 218],
+  [175, 215, 255],
+  [180, 243, 198],
+];
+
 interface Particle {
-  col: number;
-  row: number;
-  tx: number;        // target x
-  ty: number;        // target y
-  x: number;         // current x
-  y: number;         // current y
-  vx: number;        // velocity x
-  vy: number;        // velocity y
-  angle: number;     // current rotation (radians)
-  restAngle: number; // resting tilt
-  va: number;        // angular velocity
-  r: number;
-  g: number;
-  b: number;         // note colour
-  opacity: number;   // driven by webcam brightness (inverted)
+  col: number; row: number;
+  tx: number;  ty: number;   // home position
+  x:  number;  y:  number;   // current position
+  vx: number;  vy: number;
+  angle: number;  restAngle: number;  va: number;
+  r: number; g: number; b: number;
+  opacity: number;  // 0–1 driven by inverted webcam brightness
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function StickyMirror() {
-  const displayCanvasRef = useRef<HTMLCanvasElement>(null);
-  // Hidden 24×28 canvas for webcam sampling
-  const sampleCanvasRef = useRef<HTMLCanvasElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
-  const prevGrayRef = useRef<Uint8ClampedArray | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [camState, setCamState] = useState<"requesting" | "active" | "denied">("requesting");
+  const displayRef  = useRef<HTMLCanvasElement>(null);
+  const sampleRef   = useRef<HTMLCanvasElement>(null);  // COLS×ROWS hidden canvas
+  const videoRef    = useRef<HTMLVideoElement>(null);
+  const particles   = useRef<Particle[]>([]);
+  const prevGray    = useRef<Uint8ClampedArray | null>(null);
+  const rafId       = useRef<number | null>(null);
+  const streamRef   = useRef<MediaStream | null>(null);
+  const lastChange  = useRef<number>(0);
 
-  // ── Initialise particles ─────────────────────────────────────────────────
+  const [camState,  setCamState]  = useState<"requesting" | "active" | "denied">("requesting");
+  const [paragraph, setParagraph] = useState(buildParagraph(WHAT[0], WHY[0], WHO[1], HOW[0]));
+  const [paraVisible, setParaVisible] = useState(true);
+
+  // ── Init particles ──────────────────────────────────────────────────────────
   useEffect(() => {
     const ps: Particle[] = [];
     for (let row = 0; row < ROWS; row++) {
@@ -75,14 +116,37 @@ export function StickyMirror() {
           vx: 0, vy: 0,
           angle: restAngle, restAngle, va: 0,
           r, g, b,
-          opacity: 0.15,
+          opacity: 0.12,
         });
       }
     }
-    particlesRef.current = ps;
+    particles.current = ps;
   }, []);
 
-  // ── Request webcam ───────────────────────────────────────────────────────
+  // ── Phrase update triggered by motion ──────────────────────────────────────
+  const updatePhrases = useCallback((motionCx: number, motionCy: number) => {
+    const now = Date.now();
+    if (now - lastChange.current < CHANGE_COOLDOWN) return;
+    lastChange.current = now;
+
+    // Map motion centroid (in canvas-space 0..1) to phrase indices
+    const nx = motionCx / CW;
+    const ny = motionCy / CH;
+    const wi = Math.floor(nx * WHAT.length) % WHAT.length;
+    const yi = Math.floor(ny * WHY.length) % WHY.length;
+    const oi = Math.floor(((nx + ny) / 2) * WHO.length) % WHO.length;
+    const hi = Math.floor(((nx * 0.6 + (1 - ny) * 0.4)) * HOW.length) % HOW.length;
+
+    const text = buildParagraph(WHAT[wi], WHY[yi], WHO[oi], HOW[hi]);
+
+    setParaVisible(false);
+    setTimeout(() => {
+      setParagraph(text);
+      setParaVisible(true);
+    }, 200);
+  }, []);
+
+  // ── Webcam ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
@@ -90,146 +154,123 @@ export function StickyMirror() {
           video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
         });
         streamRef.current = stream;
-        const video = videoRef.current;
-        if (video) {
-          video.srcObject = stream;
-          video.onloadedmetadata = () => {
-            video.play();
-            setCamState("active");
-          };
-        }
+        const v = videoRef.current!;
+        v.srcObject = stream;
+        v.onloadedmetadata = () => { v.play(); setCamState("active"); };
       } catch {
         setCamState("denied");
       }
     })();
-    return () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
+    return () => { streamRef.current?.getTracks().forEach(t => t.stop()); };
   }, []);
 
-  // ── Animation loop ───────────────────────────────────────────────────────
+  // ── Animation loop ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (camState !== "active") return;
 
-    const display = displayCanvasRef.current;
-    const sample = sampleCanvasRef.current;
-    const video = videoRef.current;
-    if (!display || !sample || !video) return;
-
-    const ctx = display.getContext("2d")!;
-    const sCtx = sample.getContext("2d", { willReadFrequently: true })!;
+    const display = displayRef.current!;
+    const sample  = sampleRef.current!;
+    const video   = videoRef.current!;
+    const ctx     = display.getContext("2d")!;
+    const sCtx    = sample.getContext("2d", { willReadFrequently: true })!;
 
     const loop = () => {
-      // ── 1. Sample webcam at low resolution, mirrored ─────────────────
+      // 1. Sample webcam into COLS×ROWS grid (mirrored)
       sCtx.save();
       sCtx.translate(COLS, 0);
       sCtx.scale(-1, 1);
       sCtx.drawImage(video, 0, 0, COLS, ROWS);
       sCtx.restore();
-      const { data: imgData } = sCtx.getImageData(0, 0, COLS, ROWS);
+      const { data } = sCtx.getImageData(0, 0, COLS, ROWS);
 
       // Convert to grayscale
       const gray = new Uint8ClampedArray(COLS * ROWS);
       for (let i = 0; i < COLS * ROWS; i++) {
-        gray[i] =
-          imgData[i * 4] * 0.299 +
-          imgData[i * 4 + 1] * 0.587 +
-          imgData[i * 4 + 2] * 0.114;
+        gray[i] = data[i * 4] * 0.299 + data[i * 4 + 1] * 0.587 + data[i * 4 + 2] * 0.114;
       }
 
-      // ── 2. Motion detection ──────────────────────────────────────────
-      let motionMag = 0;
-      if (prevGrayRef.current) {
-        let diffSum = 0;
+      // 2. Motion detection
+      let motionSum = 0;
+      let motionCx = CW / 2, motionCy = CH / 2, motionCount = 0;
+
+      if (prevGray.current) {
         for (let i = 0; i < gray.length; i++) {
-          diffSum += Math.abs(gray[i] - prevGrayRef.current[i]);
+          const diff = Math.abs(gray[i] - prevGray.current[i]);
+          motionSum += diff;
+          if (diff > 25) {
+            motionCx += (i % COLS) * CELL + CELL / 2;
+            motionCy += Math.floor(i / COLS) * CELL + CELL / 2;
+            motionCount++;
+          }
         }
-        motionMag = diffSum / gray.length;
+        if (motionCount > 0) { motionCx /= motionCount; motionCy /= motionCount; }
       }
-      prevGrayRef.current = gray.slice();
+      prevGray.current = gray.slice();
 
-      const isMoving = motionMag > MOTION_THRESHOLD;
+      const motionMag = motionSum / gray.length;
+      const moving    = motionMag > MOT_THR;
 
-      // ── 3. Update particle opacities from webcam brightness ──────────
-      const particles = particlesRef.current;
-      for (const p of particles) {
+      // 3. Trigger phrase update on significant motion
+      if (moving) updatePhrases(motionCx, motionCy);
+
+      // 4. Update particle opacities from webcam brightness (inverted)
+      const ps = particles.current;
+      for (const p of ps) {
         const gv = gray[p.row * COLS + p.col];
-        // Dark pixels (hair, eyes, shadows) → high opacity note
-        // Bright pixels (background) → low opacity / invisible
-        const targetOp = Math.max(0.04, (230 - gv) / 230);
-        p.opacity += (targetOp - p.opacity) * 0.10;
+        // Dark face/hair features → high opacity; bright background → transparent
+        const target = Math.max(0.04, (210 - gv) / 210);
+        p.opacity += (target - p.opacity) * 0.10;
       }
 
-      // ── 4. Physics ───────────────────────────────────────────────────
-      for (const p of particles) {
-        if (isMoving) {
-          // Scatter impulse — each note gets a random kick proportional to motion
-          const kick = Math.min(motionMag * SCATTER_STRENGTH, 18);
+      // 5. Physics
+      for (const p of ps) {
+        if (moving) {
+          const kick = Math.min(motionMag * SCATTER, 20);
           p.vx += (Math.random() - 0.5) * kick;
           p.vy += (Math.random() - 0.5) * kick;
-          p.va += (Math.random() - 0.5) * 0.35;
+          p.va += (Math.random() - 0.5) * 0.4;
         }
-
-        // Spring force toward target position
-        p.vx += -SPRING_K * (p.x - p.tx);
-        p.vy += -SPRING_K * (p.y - p.ty);
-        p.va += -SPRING_K * (p.angle - p.restAngle);
-
-        // Damping
-        p.vx *= DAMPING;
-        p.vy *= DAMPING;
-        p.va *= DAMPING;
-
-        p.x += p.vx;
-        p.y += p.vy;
-        p.angle += p.va;
+        // Spring toward home
+        p.vx += -SPRING * (p.x - p.tx);
+        p.vy += -SPRING * (p.y - p.ty);
+        p.va += -SPRING * (p.angle - p.restAngle);
+        // Damp
+        p.vx *= DAMP; p.vy *= DAMP; p.va *= DAMP;
+        p.x  += p.vx; p.y  += p.vy; p.angle += p.va;
       }
 
-      // ── 5. Render ────────────────────────────────────────────────────
-      ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+      // 6. Render — plain background, notes only (no webcam feed)
+      ctx.clearRect(0, 0, CW, CH);
 
-      // Layer 1: desaturated B&W webcam feed (the "reflection underneath")
-      ctx.save();
-      ctx.filter = "grayscale(1) contrast(1.3) brightness(0.45)";
-      ctx.globalAlpha = 0.55;
-      // Mirror the video draw
-      ctx.translate(CANVAS_W, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0, CANVAS_W, CANVAS_H);
-      ctx.restore();
-
-      // Layer 2: sticky note particles on top
-      for (const p of particles) {
+      for (const p of ps) {
         ctx.save();
         ctx.globalAlpha = p.opacity;
-        ctx.translate(p.x + NOTE_W / 2, p.y + NOTE_H / 2);
+        ctx.translate(p.x + NOTE / 2, p.y + NOTE / 2);
         ctx.rotate(p.angle);
 
-        // Subtle shadow for depth
-        ctx.shadowColor = "rgba(0,0,0,0.20)";
-        ctx.shadowBlur = 5;
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 2;
+        ctx.shadowColor    = "rgba(0,0,0,0.18)";
+        ctx.shadowBlur     = 4;
+        ctx.shadowOffsetX  = 1;
+        ctx.shadowOffsetY  = 2;
 
         ctx.fillStyle = `rgb(${p.r},${p.g},${p.b})`;
-        ctx.fillRect(-NOTE_W / 2, -NOTE_H / 2, NOTE_W, NOTE_H);
+        ctx.fillRect(-NOTE / 2, -NOTE / 2, NOTE, NOTE);
 
-        // Tiny "tape" strip at top of each note
-        ctx.globalAlpha = p.opacity * 0.25;
-        ctx.fillStyle = "rgba(255,255,255,0.8)";
-        ctx.fillRect(-NOTE_W / 2, -NOTE_H / 2, NOTE_W, 3);
+        // Tape strip
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = p.opacity * 0.3;
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.fillRect(-NOTE / 2, -NOTE / 2, NOTE, 3);
 
         ctx.restore();
       }
 
-      rafRef.current = requestAnimationFrame(loop);
+      rafId.current = requestAnimationFrame(loop);
     };
 
-    rafRef.current = requestAnimationFrame(loop);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [camState]);
+    rafId.current = requestAnimationFrame(loop);
+    return () => { if (rafId.current) cancelAnimationFrame(rafId.current); };
+  }, [camState, updatePhrases]);
 
   return (
     <main
@@ -237,63 +278,64 @@ export function StickyMirror() {
       className="min-h-screen bg-[#f7f6f3] text-[#111] flex flex-col items-center"
     >
       {/* Studio name */}
-      <header className="w-full text-center pt-10 pb-6">
-        <span className="text-xs tracking-[0.3em] uppercase text-[#888] font-medium">
+      <header className="w-full text-center pt-9 pb-5">
+        <span className="text-[0.65rem] tracking-[0.32em] uppercase text-[#999] font-medium">
           Alchemy Unlimited
         </span>
       </header>
 
-      <div className="flex flex-col items-center gap-4 px-8 w-full">
-        <p className="text-[0.62rem] tracking-[0.22em] uppercase text-[#aaa] font-medium">
-          your reflection, in notes
-        </p>
-
-        {/* Camera permission states */}
+      {/* Sticky note canvas */}
+      <div className="px-8 w-full flex flex-col items-center">
         {camState === "denied" && (
-          <div className="flex flex-col items-center justify-center gap-3 py-16 text-center max-w-xs">
-            <div className="grid grid-cols-2 gap-1.5 opacity-40" aria-hidden>
+          <div className="flex flex-col items-center gap-4 py-14 text-center">
+            <div className="grid grid-cols-2 gap-2 opacity-35">
               {COLORS.map(([r, g, b], i) => (
                 <div
                   key={i}
                   style={{
-                    width: 80, height: 80,
+                    width: 60, height: 60,
                     background: `rgb(${r},${g},${b})`,
                     borderRadius: 2,
-                    transform: `rotate(${(i % 2 === 0 ? 1 : -1) * 2.5}deg)`,
+                    transform: `rotate(${(i % 2 === 0 ? 1 : -1) * 3}deg)`,
                   }}
                 />
               ))}
             </div>
-            <p className="text-sm text-[#888] mt-4">Camera access is needed to see your reflection.</p>
-            <p className="text-xs text-[#aaa]">Allow camera access and reload the page.</p>
+            <p className="text-sm text-[#999] mt-2">Allow camera access to see your reflection.</p>
           </div>
         )}
 
         {camState === "requesting" && (
-          <div className="py-16 text-sm text-[#aaa]">
-            Requesting camera access…
-          </div>
+          <p className="py-12 text-sm text-[#bbb]">Waiting for camera…</p>
         )}
 
-        {/* The portrait canvas */}
-        <div className={camState === "active" ? "block" : "hidden"}>
-          <canvas
-            ref={displayCanvasRef}
-            width={CANVAS_W}
-            height={CANVAS_H}
-            className="rounded-sm"
-            style={{ imageRendering: "pixelated" }}
-          />
-        </div>
+        <canvas
+          ref={displayRef}
+          width={CW}
+          height={CH}
+          className={camState === "active" ? "block" : "hidden"}
+        />
 
-        <p className="text-[0.58rem] tracking-[0.25em] uppercase text-[#bbb] font-medium mt-1">
-          move to scatter &nbsp;·&nbsp; still to reform
+        {/* Divider */}
+        <div className="w-10 h-px bg-[#ddd] my-7" />
+
+        {/* Live paragraph — updates when you move */}
+        <p
+          className="text-[0.88rem] leading-[1.85] text-[#444] font-light italic text-center max-w-md transition-opacity duration-200"
+          style={{ opacity: paraVisible ? 1 : 0 }}
+        >
+          "{paragraph}"
+        </p>
+
+        {/* Hint */}
+        <p className="text-[0.58rem] tracking-[0.25em] uppercase text-[#c0c0c0] font-medium mt-8 mb-10">
+          move to scatter · still to reform
         </p>
       </div>
 
-      {/* Hidden elements */}
+      {/* Hidden webcam elements */}
       <video ref={videoRef} className="hidden" playsInline muted />
-      <canvas ref={sampleCanvasRef} width={COLS} height={ROWS} className="hidden" />
+      <canvas ref={sampleRef} width={COLS} height={ROWS} className="hidden" />
     </main>
   );
 }
