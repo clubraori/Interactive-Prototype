@@ -67,19 +67,37 @@ const PALETTES = [
 const SESSION = PALETTES[Math.floor(Math.random() * PALETTES.length)];
 
 // ─── Two-sided shader: front face = session colour, back = white ───────────────
+// IMPORTANT: must apply instanceMatrix manually for InstancedMesh.
+// We check world-space normal z to decide front vs back (camera is at +z).
 const vertShader = `
-  varying vec3 vNormalView;
+  // Three.js provides instanceMatrix automatically for InstancedMesh
+  // and defines USE_INSTANCING — we declare the attribute ourselves.
+  #ifdef USE_INSTANCING
+    attribute mat4 instanceMatrix;
+  #endif
+
+  varying float vFacing;
+
   void main() {
-    vNormalView = normalize(normalMatrix * normal);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    #ifdef USE_INSTANCING
+      mat4 instancedModel = modelMatrix * instanceMatrix;
+    #else
+      mat4 instancedModel = modelMatrix;
+    #endif
+
+    // World-space normal z: > 0 faces camera (at +z), < 0 faces away
+    vec3 worldNormal = normalize(mat3(instancedModel) * normal);
+    vFacing = worldNormal.z;
+
+    gl_Position = projectionMatrix * viewMatrix * instancedModel * vec4(position, 1.0);
   }
 `;
 const fragShader = `
   uniform vec3 uFront;
   uniform vec3 uBack;
-  varying vec3 vNormalView;
+  varying float vFacing;
   void main() {
-    gl_FragColor = vec4(vNormalView.z >= 0.0 ? uFront : uBack, 1.0);
+    gl_FragColor = vec4(vFacing >= 0.0 ? uFront : uBack, 1.0);
   }
 `;
 
@@ -224,6 +242,18 @@ export function StickyMirrorUp() {
     const _quat   = new THREE.Quaternion();
     const _scale  = new THREE.Vector3(1, 1, 1);
     const _euler  = new THREE.Euler();
+
+    // ── Pre-initialise all instance matrices to their correct resting positions
+    // (avoids all 960 notes piling at origin before the first loop frame)
+    for (let i = 0; i < cards.length; i++) {
+      const c = cards[i];
+      _pos.set(c.pivotX, c.pivotY, 0);
+      _quat.identity();
+      _mat4.compose(_pos, _quat, _scale);
+      iMesh.setMatrixAt(i, _mat4);
+    }
+    iMesh.instanceMatrix.needsUpdate = true;
+    renderer.render(scene, camera); // draw one frame so notes are visible immediately
 
     // ── Webcam sampling
     const sample = sampleRef.current!;
