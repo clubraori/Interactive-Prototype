@@ -1,0 +1,138 @@
+Build a simple interactive landing page prototype for a creative studio called Alchemy Unlimited.
+
+Goal
+
+Create a minimalist, elegant single-page website where a mission statement dynamically changes based on mouse movement across the screen.
+
+The experience should feel like a living manifesto generator.
+
+Core interaction
+
+In the top-left corner, display a sentence template like this:
+
+We at Alchemy Unlimited are a collection of creative alchemists who are interested in [WHAT]. We are committed to [WHY] for [WHO]. We approach our work through [HOW], providing our insights within and beyond the scope of our work.
+
+As the user moves their mouse around the page, the text should update in real time.
+
+Important:
+
+Do not just swap in single words.
+Each variable should pull from full phrases or short clauses.
+The overall output should read like a coherent mission/value statement.
+The transitions should feel smooth and alive, not random and chaotic.
+Variables
+
+Create phrase banks for:
+
+WHAT
+WHY
+WHO
+HOW
+
+Use phrases inspired by the following themes:
+
+WHAT
+interdisciplinary design
+innovative design
+gathering creative communities
+art and science collaborations
+creative strategies
+cultural and public engagement
+research-oriented collaboration
+creative producing
+building new possibilities across art, design, culture, and technology
+WHY
+realising the potential of art and science collaborations
+unlocking creative potential
+organising and activating creative energy
+empowering action through creative strategies
+building equitable processes
+bringing ideas to life
+generating empathy and goodwill within communities
+embedding responsible design frameworks
+creating meaningful public intersections
+WHO
+partners and stakeholders
+audiences and communities
+cultural institutions
+artists and creatives
+academic institutions and incubators
+public-facing organisations
+innovative institutions
+learners and students
+communities working at the intersection of creativity and impact
+HOW
+a creative-producing framework
+interdisciplinary thinking
+art-thinking and design-thinking
+facilitation and co-design
+hands-on, interactive processes
+dialogue with stakeholders
+empathy and care
+process-oriented collaboration
+a distributed studio model blending consultancy, collective practice, and research
+Interaction logic
+
+Map mouse position to phrase selection:
+
+horizontal movement can influence one or two variables
+vertical movement can influence the others
+nearby mouse positions should produce nearby phrase combinations
+avoid rapid flickering
+interpolate or ease transitions if needed
+
+The page should generate many possible variations, but they should all feel aligned to the same brand voice.
+
+Output area
+
+Under the template sentence, also show a larger paragraph version that expands the selected phrases into a more complete mission statement.
+
+For example, when the phrase combination changes, generate a paragraph like:
+
+“We at Alchemy Unlimited are a collection of creative alchemists interested in interdisciplinary design and the gathering of creative communities. We are committed to realising the potential of art and science collaborations for partners, audiences, and stakeholders. We approach our work through a creative-producing framework rooted in empathy, dialogue, and process, providing insight within and beyond the immediate brief.”
+
+This paragraph can be assembled from modular sentence fragments, but it should read naturally.
+
+Design direction
+
+The design should be:
+
+minimal
+spacious
+editorial
+contemporary
+quietly experimental
+
+Use:
+
+off-white or very light grey background
+black or very dark text
+subtle accent colors inspired by sticky-note palettes: pale yellow, pale pink, pale blue, pale green
+generous whitespace
+large margins
+clean sans-serif typography
+elegant responsive layout
+
+The page should feel like a prototype for a design-led creative studio, not a corporate website.
+
+Technical requirements
+Use HTML, CSS, and JavaScript only
+Keep everything in a single Replit project
+Code should be clear and easy to edit
+Store phrase banks in arrays or structured objects
+Separate the short template sentence and the expanded paragraph logic
+Include comments so the phrase banks can be edited later
+Nice-to-have
+Smooth fade transition when text updates
+Small subtle label somewhere saying “move to generate”
+Mouse movement should influence the text continuously, like an exploratory field rather than a button click interaction
+Important constraint
+
+This is prototype v1, so keep it simple and focused on:
+
+dynamic sentence generation
+dynamic paragraph generation
+elegant mouse-based interaction
+clean landing page presentation
+
+Do not add menus, multiple pages, animations everywhere, or extra sections yet.

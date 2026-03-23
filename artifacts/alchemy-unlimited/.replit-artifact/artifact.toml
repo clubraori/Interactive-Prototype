@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Alchemy Unlimited"
+version = "1.0.0"
+id = "artifacts/alchemy-unlimited"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22465
+
+[services.development]
+run = "pnpm --filter @workspace/alchemy-unlimited run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/alchemy-unlimited", "run", "build" ]
+publicDir = "artifacts/alchemy-unlimited/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22465"
+BASE_PATH = "/"
