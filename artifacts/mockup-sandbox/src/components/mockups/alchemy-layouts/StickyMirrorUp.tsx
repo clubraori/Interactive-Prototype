@@ -66,40 +66,6 @@ const PALETTES = [
 ];
 const SESSION = PALETTES[Math.floor(Math.random() * PALETTES.length)];
 
-// ─── Two-sided shader: front face = session colour, back = white ───────────────
-// IMPORTANT: must apply instanceMatrix manually for InstancedMesh.
-// We check world-space normal z to decide front vs back (camera is at +z).
-const vertShader = `
-  // Three.js provides instanceMatrix automatically for InstancedMesh
-  // and defines USE_INSTANCING — we declare the attribute ourselves.
-  #ifdef USE_INSTANCING
-    attribute mat4 instanceMatrix;
-  #endif
-
-  varying float vFacing;
-
-  void main() {
-    #ifdef USE_INSTANCING
-      mat4 instancedModel = modelMatrix * instanceMatrix;
-    #else
-      mat4 instancedModel = modelMatrix;
-    #endif
-
-    // World-space normal z: > 0 faces camera (at +z), < 0 faces away
-    vec3 worldNormal = normalize(mat3(instancedModel) * normal);
-    vFacing = worldNormal.z;
-
-    gl_Position = projectionMatrix * viewMatrix * instancedModel * vec4(position, 1.0);
-  }
-`;
-const fragShader = `
-  uniform vec3 uFront;
-  uniform vec3 uBack;
-  varying float vFacing;
-  void main() {
-    gl_FragColor = vec4(vFacing >= 0.0 ? uFront : uBack, 1.0);
-  }
-`;
 
 // ─── Return delay: notes near activation centroid hold white longest ───────────
 function computeReturnDelay(col: number, row: number, cx: number, cy: number): number {
@@ -192,26 +158,36 @@ export function StickyMirrorUp() {
 
     const scene = new THREE.Scene();
 
-    // ── Geometry: PlaneGeometry with bottom edge at y=0 (pivot point)
-    const geo = new THREE.PlaneGeometry(NOTE * 0.92, NOTE * 0.92);
-    geo.translate(0, NOTE / 2, 0); // shift up so pivot is at y=0
+    // ── Two InstancedMeshes — no custom shader needed.
+    // Front plane: normal +z, visible when rotation.x = 0 (flat, facing camera)
+    // Back  plane: normal -z (rotateY π), visible when rotation.x = -π (flipped)
+    const noteW = NOTE * 0.90;
+    const noteH = NOTE * 0.90;
 
-    // ── Two-sided shader material
-    const mat = new THREE.ShaderMaterial({
-      vertexShader:   vertShader,
-      fragmentShader: fragShader,
-      uniforms: {
-        uFront: { value: SESSION.front.clone() },
-        uBack:  { value: SESSION.back.clone()  },
-      },
-      side: THREE.DoubleSide,
-    });
+    const geoFront = new THREE.PlaneGeometry(noteW, noteH);
+    geoFront.translate(0, noteH / 2, 0); // pivot at bottom
 
-    // ── InstancedMesh: one draw call for all notes
+    const geoBack = new THREE.PlaneGeometry(noteW, noteH);
+    geoBack.rotateY(Math.PI);            // flip normal to -z
+    geoBack.translate(0, noteH / 2, 0); // same pivot
+
+    const matFront = new THREE.MeshBasicMaterial({ color: SESSION.front, side: THREE.FrontSide });
+    const matBack  = new THREE.MeshBasicMaterial({ color: SESSION.back,  side: THREE.FrontSide });
+
     const total = COLS * ROWS;
-    const iMesh = new THREE.InstancedMesh(geo, mat, total);
-    iMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    scene.add(iMesh);
+    const iMeshFront = new THREE.InstancedMesh(geoFront, matFront, total);
+    const iMeshBack  = new THREE.InstancedMesh(geoBack,  matBack,  total);
+
+    // Disable frustum culling — Three.js bounding-sphere check uses base geometry
+    // only (not per-instance positions), which can incorrectly cull all notes.
+    iMeshFront.frustumCulled = false;
+    iMeshBack.frustumCulled  = false;
+
+    iMeshFront.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    iMeshBack.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+    scene.add(iMeshFront);
+    scene.add(iMeshBack);
 
     // ── Card physics state
     const cards: Card[] = [];
@@ -250,9 +226,11 @@ export function StickyMirrorUp() {
       _pos.set(c.pivotX, c.pivotY, 0);
       _quat.identity();
       _mat4.compose(_pos, _quat, _scale);
-      iMesh.setMatrixAt(i, _mat4);
+      iMeshFront.setMatrixAt(i, _mat4);
+      iMeshBack.setMatrixAt(i, _mat4);
     }
-    iMesh.instanceMatrix.needsUpdate = true;
+    iMeshFront.instanceMatrix.needsUpdate = true;
+    iMeshBack.instanceMatrix.needsUpdate  = true;
     renderer.render(scene, camera); // draw one frame so notes are visible immediately
 
     // ── Webcam sampling
@@ -325,10 +303,12 @@ export function StickyMirrorUp() {
         _euler.set(c.currentRot, 0, 0, "XYZ");
         _quat.setFromEuler(_euler);
         _mat4.compose(_pos, _quat, _scale);
-        iMesh.setMatrixAt(i, _mat4);
+        iMeshFront.setMatrixAt(i, _mat4);
+        iMeshBack.setMatrixAt(i, _mat4);
       }
 
-      iMesh.instanceMatrix.needsUpdate = true;
+      iMeshFront.instanceMatrix.needsUpdate = true;
+      iMeshBack.instanceMatrix.needsUpdate  = true;
 
       // 4. Word change: fires when 20+ notes flip in this frame
       if (newFlips >= FLIP_TRIGGER) {
@@ -348,8 +328,8 @@ export function StickyMirrorUp() {
     return () => {
       if (rafId.current) cancelAnimationFrame(rafId.current);
       renderer.dispose();
-      geo.dispose();
-      mat.dispose();
+      geoFront.dispose(); geoBack.dispose();
+      matFront.dispose(); matBack.dispose();
       if (mountRef.current && renderer.domElement.parentNode === mountRef.current) {
         mountRef.current.removeChild(renderer.domElement);
       }
