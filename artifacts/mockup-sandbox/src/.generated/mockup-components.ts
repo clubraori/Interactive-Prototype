@@ -3,5 +3,6 @@ type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/alchemy-layouts/GridManifesto.tsx": () => import("../components/mockups/alchemy-layouts/GridManifesto.tsx"),
   "./components/mockups/alchemy-layouts/PosterStack.tsx": () => import("../components/mockups/alchemy-layouts/PosterStack.tsx"),
-  "./components/mockups/alchemy-layouts/SplitCanvas.tsx": () => import("../components/mockups/alchemy-layouts/SplitCanvas.tsx")
+  "./components/mockups/alchemy-layouts/SplitCanvas.tsx": () => import("../components/mockups/alchemy-layouts/SplitCanvas.tsx"),
+  "./components/mockups/alchemy-layouts/StickyMirror.tsx": () => import("../components/mockups/alchemy-layouts/StickyMirror.tsx")
 };
