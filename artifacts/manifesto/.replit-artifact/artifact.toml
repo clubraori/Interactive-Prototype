@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/manifesto/"
+title = "Manifesto Generator"
+version = "1.0.0"
+id = "artifacts/manifesto"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/manifesto/" ]
+localPort = 25410
+
+[services.development]
+run = "pnpm --filter @workspace/manifesto run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/manifesto", "run", "build" ]
+publicDir = "artifacts/manifesto/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25410"
+BASE_PATH = "/manifesto/"
