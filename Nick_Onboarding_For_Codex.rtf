@@ -1,0 +1,53 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Helvetica;}{\f1 Courier;}}
+\fs24
+\b Nick Onboarding Instructions\b0\par
+\par
+Send Nick this:\par
+\par
+Install Codex and GitHub Desktop first. Then install Node.js and pnpm, because the project needs those to run locally.\par
+\par
+If you're on a Mac and have Homebrew installed, open Terminal and run:\par
+\par
+{\f1 brew install node\par
+brew install pnpm\par}
+\par
+Then verify everything is installed:\par
+\par
+{\f1 node -v\par
+npm -v\par
+pnpm -v\par
+git --version\par}
+\par
+If brew is not installed, install Homebrew first from https://brew.sh, then run the commands above.\par
+\par
+After that, make sure you've been added to the GitHub repo with write access so you can pull and push. The repo is:\par
+\par
+https://github.com/clubraori/Interactive-Prototype.git\par
+\par
+Then clone the repo to your computer, preferably with GitHub Desktop if Terminal authentication is awkward. Once it's cloned, open the local repo folder in Codex. The repo already includes setup instructions for you and your agent, including AGENTS.md, README_FOR_NICK.md, and docs/NICK_SETUP.md.\par
+\par
+Once the repo is open in Codex, paste this prompt:\par
+\par
+{\f1 Please read the repo instructions, especially AGENTS.md, README_FOR_NICK.md, and docs/NICK_SETUP.md. Then set this project up for local development: verify the git remote and branch, confirm node, npm, pnpm, and git are installed, install dependencies, run the main site on localhost, and verify whether this machine is correctly set up to pull from and push to GitHub. If push is blocked, tell me exactly whether the issue is authentication or repo permissions.\par}
+\par
+If everything is set up correctly, Codex should:\par
+\par
+- install dependencies\par
+- run the site locally\par
+- give you a localhost URL like http://localhost:5173/\par
+- verify whether you can pull and push to the repo\par
+\par
+If he wants the simplest possible order of operations, it's this:\par
+\par
+1. Install Homebrew if needed.\par
+2. Run {\f1 brew install node}.\par
+3. Run {\f1 brew install pnpm}.\par
+4. Install GitHub Desktop and sign into GitHub.\par
+5. Clone https://github.com/clubraori/Interactive-Prototype.git.\par
+6. Open the cloned folder in Codex.\par
+7. Ask Codex to follow the internal repo setup docs and get the site running locally.\par
+8. Let Codex verify pull and push access.\par
+\par
+One small clarification: npm comes with Node.js, so when Nick installs Node.js, npm is installed automatically. He only needs a separate install for pnpm.\par
+}

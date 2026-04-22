@@ -50,7 +50,7 @@ const HOW = [
 ];
 
 function buildParagraph(what: string, why: string, who: string, how: string) {
-  return `We at Alchemy Unlimited are a collection of creative alchemists interested in ${what}. We are committed to ${why} for ${who}. We approach our work through ${how}, providing insight within and beyond the immediate brief.`;
+  return `We at Alchemy Unlimited are a collection of creative alchemists interested in ${what}. We are committed to ${why} for ${who}. We approach our work through ${how}.`;
 }
 
 function clamp(v: number, lo: number, hi: number) {
