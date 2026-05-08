@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alchemy Unlimited Preview</title>
+    <style>
+      :root {
+        --bg: #f7f6f3;
+        --text: #111111;
+        --muted: #7d7872;
+        --divider-x: 50vw;
+        --accent-what: hsl(54, 100%, 88%);
+        --accent-why: hsl(340, 80%, 92%);
+        --accent-who: hsl(210, 80%, 92%);
+        --accent-how: hsl(138, 60%, 88%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+      }
+
+      body {
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      .split-left {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: var(--divider-x);
+        background: #ffffff;
+        pointer-events: none;
+      }
+
+      .divider {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: calc(var(--divider-x) - 0.5px);
+        width: 1px;
+        background: rgba(17, 17, 17, 0.22);
+        pointer-events: none;
+      }
+
+      .page {
+        position: relative;
+        z-index: 1;
+        max-width: 1180px;
+        margin: 0 auto;
+        min-height: 100vh;
+        padding: 32px 24px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: #888888;
+        font-weight: 600;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 272px;
+        gap: 48px;
+        flex: 1;
+        margin-top: 32px;
+      }
+
+      .manifesto-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px 40px;
+      }
+
+      .block {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .block:hover .value {
+        color: #6f6a63;
+      }
+
+      .label {
+        display: inline-block;
+        padding: 4px 8px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+
+      .value {
+        margin-top: 12px;
+        max-width: 18ch;
+        font-size: clamp(1.1rem, 2vw, 2rem);
+        line-height: 1.05;
+        font-weight: 500;
+        letter-spacing: -0.03em;
+        transition: color 160ms ease, opacity 180ms ease;
+      }
+
+      .lock-hint {
+        margin-top: 10px;
+        font-size: 9px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #b4aea4;
+        opacity: 0;
+        transition: opacity 160ms ease;
+      }
+
+      .block:hover .lock-hint {
+        opacity: 1;
+      }
+
+      .block.locked .label {
+        background: rgba(188, 188, 188, 0.72) !important;
+        color: #5f5a54 !important;
+      }
+
+      .block.locked .value {
+        color: var(--muted);
+      }
+
+      .rule {
+        width: 100%;
+        height: 1px;
+        margin: 42px 0 0;
+        background: #d7d5cf;
+      }
+
+      .statement {
+        max-width: 36rem;
+        margin-top: 28px;
+        font-size: 0.92rem;
+        line-height: 1.7;
+        font-weight: 300;
+        color: #4a4a4a;
+      }
+
+      .typed-slot {
+        color: #3f3b36;
+      }
+
+      .typed-slot::after {
+        content: "";
+        display: inline-block;
+        width: 1px;
+        height: 0.95em;
+        margin-left: 1px;
+        transform: translateY(2px);
+        background: #8a8780;
+        animation: pulse 1s infinite;
+      }
+
+      .note {
+        border: 1px solid #d8d1b6;
+        background: rgba(255, 240, 168, 0.9);
+        padding: 16px;
+        box-shadow: 0 12px 28px rgba(73, 60, 18, 0.08);
+        align-self: start;
+      }
+
+      .note-title,
+      .note-heading {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+
+      .note-title {
+        color: #6d6547;
+        margin-bottom: 10px;
+      }
+
+      .menu-button {
+        width: 100%;
+        border: 1px solid transparent;
+        background: transparent;
+        padding: 10px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-align: left;
+        color: #353126;
+        cursor: pointer;
+      }
+
+      .menu-button:hover {
+        background: rgba(255, 255, 255, 0.45);
+      }
+
+      .menu-button.active {
+        background: rgba(255, 255, 255, 0.54);
+        border-color: rgba(109, 101, 71, 0.24);
+      }
+
+      .menu-state {
+        font-size: 11px;
+        color: #8c8468;
+      }
+
+      .note-copy {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid #d8d1b6;
+      }
+
+      .note-heading {
+        color: #8c8468;
+      }
+
+      .note-body {
+        margin-top: 12px;
+        font-size: 0.84rem;
+        line-height: 1.6;
+        color: #403a2c;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.25;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      @media (max-width: 920px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .note {
+          max-width: 28rem;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          padding: 24px 18px;
+        }
+
+        .manifesto-grid {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="split-left"></div>
+    <div class="divider"></div>
+
+    <main class="page">
+      <div class="eyebrow">Alchemy Unlimited</div>
+
+      <div class="layout">
+        <section>
+          <div class="manifesto-grid" id="manifesto-grid"></div>
+          <div class="rule"></div>
+          <p class="statement">
+            We at Alchemy Unlimited are a collection of creative alchemists who are interested in
+            <span class="typed-slot" id="slot-what"></span>. We are committed to
+            <span class="typed-slot" id="slot-why"></span> for
+            <span class="typed-slot" id="slot-who"></span>. We approach our work through
+            <span class="typed-slot" id="slot-how"></span>.
+          </p>
+        </section>
+
+        <aside class="note">
+          <div class="note-title">Menu</div>
+          <div id="menu"></div>
+          <div class="note-copy">
+            <div class="note-heading" id="menu-eyebrow"></div>
+            <div class="note-body" id="menu-body"></div>
+          </div>
+        </aside>
+      </div>
+
+    </main>
+
+    <script>
+      const VALUE_BANKS = {
+        what: [
+          "interdisciplinary creative practice",
+          "creative consulting",
+          "community engagement",
+          "curatorial practice",
+          "programming",
+          "creative community building",
+          "art-based practices that solve or highlight issues",
+          "strategies for accessing creativity",
+          "thought leadership",
+          "creative producing",
+          "networking",
+        ],
+        why: [
+          "more equitable access to creative capital",
+          "meaningful action through creative strategies",
+          "re-engagement with our surroundings",
+          "public connection across art, science, and culture",
+          "education",
+          "deeper audience engagement",
+          "sustainable and ethical practice",
+          "unblocking creative sticking points",
+          "expanding boundaries of creative practice",
+          "better organization of brainpower and creative energy",
+          "awareness",
+          "re-engagement with each other",
+          "a more wholesome built environment",
+          "entertainment",
+        ],
+        who: [
+          "creative communities",
+          "impact-oriented institutions",
+          "community organizations",
+          "public-facing arts organizations",
+          "academic institutions",
+          "cultural institutions",
+          "nonprofits",
+          "learners and students",
+          "innovation institutions",
+          "startups",
+          "advocacy groups",
+          "conveners",
+          "immersive and emerging technology studios",
+          "artists and creatives",
+          "creative technology organizations",
+          "inclusive technology organizations",
+        ],
+        how: [
+          "co-design",
+          "creative consultation",
+          "hands-on interactive processes",
+          "workshops, installations and situated activations",
+          "facilitation",
+          "a creative producing framework",
+          "empathy and care",
+          "guiding",
+          "interdisciplinary thinking",
+          "process-oriented collaboration",
+          "stakeholder dialogue",
+          "art thinking",
+          "design thinking",
+        ],
+      };
+
+      const SECTIONS = [
+        {
+          key: "about",
+          label: "About",
+          eyebrow: "Alchemy Unlimited",
+          body:
+            "Placeholder copy for a concise introduction to the studio, its collaborators, and the kind of interdisciplinary creative practice you bring together.",
+        },
+        {
+          key: "projects",
+          label: "Projects",
+          eyebrow: "Selected Work",
+          body:
+            "Placeholder copy for a short list or summary of previous commissions, activations, workshops, and collaborations across culture, education, and emerging technology.",
+        },
+        {
+          key: "ethos",
+          label: "Ethos",
+          eyebrow: "Methodology",
+          body:
+            "Placeholder copy for the card-game-inspired framework Nick is developing, explaining how your design philosophy helps people locate themselves inside the work.",
+        },
+        {
+          key: "contact",
+          label: "Contact",
+          eyebrow: "Get In Touch",
+          body:
+            "Placeholder copy for contact details, availability, studio location, or an invitation for potential collaborators, clients, and institutions to start a conversation.",
+        },
+      ];
+
+      const LABELS = {
+        what: { title: "WHAT", color: "var(--accent-what)" },
+        why: { title: "WHY", color: "var(--accent-why)" },
+        who: { title: "WHO", color: "var(--accent-who)" },
+        how: { title: "HOW", color: "var(--accent-how)" },
+      };
+
+      const CATEGORY_ORDER = ["what", "why", "who", "how"];
+      const X_STEP_PX = 220;
+      const CHANGE_COOLDOWN_MS = 700;
+
+      const state = {
+        indices: { what: 0, why: 4, who: 1, how: 0 },
+        locks: { what: null, why: null, who: null, how: null },
+        currentMenu: "about",
+        targetX: window.innerWidth * 0.5,
+        lastBucket: Math.floor((window.innerWidth * 0.5) / X_STEP_PX),
+        lastChangeAt: 0,
+      };
+
+      const grid = document.getElementById("manifesto-grid");
+      const menu = document.getElementById("menu");
+      const menuEyebrow = document.getElementById("menu-eyebrow");
+      const menuBody = document.getElementById("menu-body");
+      const slots = {
+        what: document.getElementById("slot-what"),
+        why: document.getElementById("slot-why"),
+        who: document.getElementById("slot-who"),
+        how: document.getElementById("slot-how"),
+      };
+
+      const blockElements = {};
+      const typingFrames = {};
+
+      function currentValue(key) {
+        return state.locks[key] ?? VALUE_BANKS[key][state.indices[key]];
+      }
+
+      function typeInto(element, nextText) {
+        window.clearTimeout(typingFrames[element.id]);
+        const current = element.textContent || "";
+        if (current === nextText) return;
+
+        let prefix = 0;
+        while (
+          prefix < current.length &&
+          prefix < nextText.length &&
+          current[prefix] === nextText[prefix]
+        ) {
+          prefix += 1;
+        }
+
+        let deleting = current;
+
+        function deleteStep() {
+          if (deleting.length > prefix) {
+            deleting = deleting.slice(0, -1);
+            element.textContent = deleting;
+            typingFrames[element.id] = window.setTimeout(deleteStep, 12);
+            return;
+          }
+
+          let typedLength = prefix;
+          function typeStep() {
+            if (typedLength < nextText.length) {
+              typedLength += 1;
+              element.textContent = nextText.slice(0, typedLength);
+              typingFrames[element.id] = window.setTimeout(typeStep, 14);
+            }
+          }
+
+          typingFrames[element.id] = window.setTimeout(typeStep, 40);
+        }
+
+        typingFrames[element.id] = window.setTimeout(deleteStep, 20);
+      }
+
+      function renderBlocks() {
+        CATEGORY_ORDER.forEach((key) => {
+          const block = blockElements[key];
+          const value = currentValue(key);
+          const isLocked = Boolean(state.locks[key]);
+          block.classList.toggle("locked", isLocked);
+          block.querySelector(".value").textContent = value;
+          block.querySelector(".lock-hint").textContent = isLocked ? "click to unlock" : "click to lock";
+        });
+      }
+
+      function renderStatement() {
+        CATEGORY_ORDER.forEach((key) => {
+          const prefix = key === "what" ? " " : " ";
+          typeInto(slots[key], prefix + currentValue(key));
+        });
+      }
+
+      function renderMenu() {
+        menu.innerHTML = "";
+        SECTIONS.forEach((section) => {
+          const button = document.createElement("button");
+          button.className = "menu-button" + (section.key === state.currentMenu ? " active" : "");
+          button.type = "button";
+          button.innerHTML = `<span>${section.label}</span><span class="menu-state">${
+            section.key === state.currentMenu ? "open" : ""
+          }</span>`;
+          button.addEventListener("click", () => {
+            state.currentMenu = section.key;
+            renderMenu();
+          });
+          menu.appendChild(button);
+        });
+
+        const active = SECTIONS.find((section) => section.key === state.currentMenu);
+        menuEyebrow.textContent = active.eyebrow;
+        menuBody.textContent = active.body;
+      }
+
+      function render() {
+        renderBlocks();
+        renderStatement();
+        renderMenu();
+      }
+
+      function createBlocks() {
+        CATEGORY_ORDER.forEach((key) => {
+          const block = document.createElement("button");
+          block.className = "block";
+          block.type = "button";
+          block.innerHTML = `
+            <span class="label" style="background:${LABELS[key].color}">${LABELS[key].title}</span>
+            <div class="value"></div>
+            <div class="lock-hint">click to lock</div>
+          `;
+          block.addEventListener("click", () => {
+            const value = currentValue(key);
+            state.locks[key] = state.locks[key] === value ? null : value;
+            render();
+          });
+          blockElements[key] = block;
+          grid.appendChild(block);
+        });
+      }
+
+      function updateIndicesFromX(x) {
+        const bucket = Math.floor(x / X_STEP_PX);
+        const now = Date.now();
+
+        if (bucket === state.lastBucket) return;
+        if (now - state.lastChangeAt < CHANGE_COOLDOWN_MS) return;
+
+        state.lastBucket = bucket;
+        state.lastChangeAt = now;
+
+        state.indices.what =
+          ((bucket % VALUE_BANKS.what.length) + VALUE_BANKS.what.length) % VALUE_BANKS.what.length;
+        state.indices.why =
+          ((Math.floor(bucket / 2) % VALUE_BANKS.why.length) + VALUE_BANKS.why.length) %
+          VALUE_BANKS.why.length;
+        state.indices.who =
+          ((Math.floor(bucket / 3) % VALUE_BANKS.who.length) + VALUE_BANKS.who.length) %
+          VALUE_BANKS.who.length;
+        state.indices.how =
+          ((Math.floor(bucket / 4) % VALUE_BANKS.how.length) + VALUE_BANKS.how.length) %
+          VALUE_BANKS.how.length;
+
+        render();
+      }
+
+      function updateDivider(x) {
+        document.documentElement.style.setProperty("--divider-x", `${x}px`);
+      }
+
+      window.addEventListener("mousemove", (event) => {
+        state.targetX = event.clientX;
+        updateDivider(state.targetX);
+        updateIndicesFromX(state.targetX);
+      });
+
+      window.addEventListener(
+        "touchmove",
+        (event) => {
+          const touch = event.touches[0];
+          if (!touch) return;
+          state.targetX = touch.clientX;
+          updateDivider(state.targetX);
+          updateIndicesFromX(state.targetX);
+        },
+        { passive: true },
+      );
+
+      window.addEventListener("resize", () => {
+        updateDivider(Math.min(state.targetX, window.innerWidth));
+      });
+
+      createBlocks();
+      render();
+      updateDivider(window.innerWidth * 0.5);
+    </script>
+  </body>
+</html>

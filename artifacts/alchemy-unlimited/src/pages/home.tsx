@@ -25,6 +25,8 @@ interface LockState {
   how: string | null;
 }
 
+type MenuSectionKey = "about" | "projects" | "ethos" | "contact";
+
 const FALLBACK_STATEMENTS: CuratedStatement[] = [
   {
     id: 1,
@@ -309,6 +311,42 @@ const CATEGORY_ORDER: VariableKey[] = ["what", "why", "who", "how"];
 const X_STEP_PX = 220;
 const CHANGE_COOLDOWN_MS = 700;
 
+const MENU_SECTIONS: {
+  key: MenuSectionKey;
+  label: string;
+  eyebrow: string;
+  body: string;
+}[] = [
+  {
+    key: "about",
+    label: "About",
+    eyebrow: "Alchemy Unlimited",
+    body:
+      "Placeholder copy for a concise introduction to the studio, its collaborators, and the kind of interdisciplinary creative practice you bring together.",
+  },
+  {
+    key: "projects",
+    label: "Projects",
+    eyebrow: "Selected Work",
+    body:
+      "Placeholder copy for a short list or summary of previous commissions, activations, workshops, and collaborations across culture, education, and emerging technology.",
+  },
+  {
+    key: "ethos",
+    label: "Ethos",
+    eyebrow: "Methodology",
+    body:
+      "Placeholder copy for the card-game-inspired framework Nick is developing, explaining how your design philosophy helps people locate themselves inside the work.",
+  },
+  {
+    key: "contact",
+    label: "Contact",
+    eyebrow: "Get In Touch",
+    body:
+      "Placeholder copy for contact details, availability, studio location, or an invitation for potential collaborators, clients, and institutions to start a conversation.",
+  },
+];
+
 function uniqueValues(
   statements: CuratedStatement[],
   key: VariableKey,
@@ -366,6 +404,7 @@ export default function Home() {
   });
   const [accentIndex, setAccentIndex] = useState(0);
   const [dividerFlashKey, setDividerFlashKey] = useState(0);
+  const [activeMenuSection, setActiveMenuSection] = useState<MenuSectionKey>("about");
 
   const updateDividerPosition = useCallback((normalisedX: number) => {
     const clamped = Math.max(0, Math.min(1, normalisedX));
@@ -463,6 +502,8 @@ export default function Home() {
   }, [updateDividerPosition]);
 
   const accentColor = ACCENT_COLORS[accentIndex];
+  const activeMenuContent =
+    MENU_SECTIONS.find((section) => section.key === activeMenuSection) ?? MENU_SECTIONS[0];
   const currentValues = {
     what: locks.what ?? VALUE_BANKS.what[indices.what],
     why: locks.why ?? VALUE_BANKS.why[indices.why],
@@ -504,99 +545,101 @@ export default function Home() {
         />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 py-8 md:px-10 md:py-10">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8 md:px-10 md:py-10">
         <header className="mb-8 md:mb-10">
           <span className="text-[0.65rem] tracking-[0.3em] uppercase text-[#888] font-medium">
             Alchemy Unlimited
           </span>
         </header>
 
-        <div className="flex flex-1 flex-col">
-          <section className="grid gap-6 sm:grid-cols-2 md:gap-x-10 md:gap-y-8">
-            <DisplaySection
-              label="WHAT"
-              text={currentValues.what}
-              color={ACCENT_COLORS[0]}
-            />
-            <DisplaySection
-              label="WHY"
-              text={currentValues.why}
-              color={ACCENT_COLORS[1]}
-            />
-            <DisplaySection
-              label="WHO"
-              text={currentValues.who}
-              color={ACCENT_COLORS[2]}
-              locked={Boolean(locks.who)}
-            />
-            <DisplaySection
-              label="HOW"
-              text={currentValues.how}
-              color={ACCENT_COLORS[3]}
-            />
-          </section>
+        <div className="flex flex-1 flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-12">
+          <div className="flex flex-1 flex-col">
+            <section className="grid gap-6 sm:grid-cols-2 md:gap-x-10 md:gap-y-8">
+              <DisplaySection
+                label="WHAT"
+                text={currentValues.what}
+                color={ACCENT_COLORS[0]}
+                locked={Boolean(locks.what)}
+                onClick={() => toggleLock("what", currentValues.what)}
+              />
+              <DisplaySection
+                label="WHY"
+                text={currentValues.why}
+                color={ACCENT_COLORS[1]}
+                locked={Boolean(locks.why)}
+                onClick={() => toggleLock("why", currentValues.why)}
+              />
+              <DisplaySection
+                label="WHO"
+                text={currentValues.who}
+                color={ACCENT_COLORS[2]}
+                locked={Boolean(locks.who)}
+                onClick={() => toggleLock("who", currentValues.who)}
+              />
+              <DisplaySection
+                label="HOW"
+                text={currentValues.how}
+                color={ACCENT_COLORS[3]}
+                locked={Boolean(locks.how)}
+                onClick={() => toggleLock("how", currentValues.how)}
+              />
+            </section>
 
-          <div className="mt-8 h-px w-full border-t border-[#d7d5cf] md:mt-10" />
+            <div className="mt-8 h-px w-full border-t border-[#d7d5cf] md:mt-10" />
 
-          <section className="mt-6 md:mt-8 max-w-[34rem]">
-            <StatementParagraph
-              what={currentValues.what}
-              why={currentValues.why}
-              who={currentValues.who}
-              how={currentValues.how}
-            />
-          </section>
+            <section className="mt-6 max-w-[36rem] md:mt-8">
+              <StatementParagraph
+                what={currentValues.what}
+                why={currentValues.why}
+                who={currentValues.who}
+                how={currentValues.how}
+              />
+            </section>
+          </div>
 
-          <section className="mt-8 md:mt-10">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <p className="text-[0.62rem] font-medium uppercase tracking-[0.22em] text-[#8a8780]">
-                Who Are You?
+          <aside className="lg:pt-1">
+            <div className="border border-[#d8d1b6] bg-[#fff0a8]/90 p-4 shadow-[0_12px_28px_rgba(73,60,18,0.08)] backdrop-blur-sm">
+              <p className="mb-3 text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-[#6d6547]">
+                Menu
               </p>
-              {locks.who ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setLocks((current) => ({ ...current, who: null }))
-                  }
-                  className="text-[0.62rem] uppercase tracking-[0.18em] text-[#8a8780] transition-opacity hover:opacity-60"
-                >
-                  Clear Who
-                </button>
-              ) : null}
-            </div>
 
-            <div className="grid max-w-3xl gap-x-8 gap-y-2 pl-4 sm:grid-cols-2 lg:grid-cols-3">
-              {VALUE_BANKS.who.map((value) => {
-                const isLocked = locks.who === value;
+              <div className="space-y-1">
+                {MENU_SECTIONS.map((section) => {
+                  const isActive = section.key === activeMenuSection;
 
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => toggleLock("who", value)}
-                    className="rounded-md border px-3 py-2 text-left text-[0.78rem] leading-[1.25] transition-colors duration-150"
-                    style={{
-                      borderColor: isLocked ? "rgba(69, 109, 148, 0.32)" : "rgba(17, 17, 17, 0.06)",
-                      backgroundColor: isLocked
-                        ? "rgba(210, 228, 245, 0.9)"
-                        : "rgba(255, 255, 255, 0.34)",
-                      boxShadow: "none",
-                      color: isLocked ? "#31485e" : "#5f5a54",
-                    }}
-                  >
-                    {value}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={section.key}
+                      type="button"
+                      onClick={() => setActiveMenuSection(section.key)}
+                      className="flex w-full items-center justify-between border border-transparent px-2 py-2 text-left transition-colors duration-150 hover:bg-white/45"
+                      style={{
+                        backgroundColor: isActive ? "rgba(255, 255, 255, 0.54)" : "transparent",
+                        borderColor: isActive ? "rgba(109, 101, 71, 0.24)" : "transparent",
+                      }}
+                    >
+                      <span className="text-[0.9rem] text-[#353126]">{section.label}</span>
+                      <span className="text-[0.68rem] text-[#8c8468]">
+                        {isActive ? "open" : ""}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 border-t border-[#d8d1b6] pt-4">
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#8c8468]">
+                  {activeMenuContent.eyebrow}
+                </p>
+                <p className="mt-3 text-[0.83rem] leading-[1.6] text-[#403a2c]">
+                  {activeMenuContent.body}
+                </p>
+              </div>
             </div>
-          </section>
+          </aside>
         </div>
 
-        <footer className="mt-auto pt-6 md:pt-8">
-          <p className="text-[0.6rem] tracking-[0.24em] uppercase text-[#bbb] font-medium">
-            move to cycle through curated statements
-          </p>
-        </footer>
+        <footer className="mt-auto pt-6 md:pt-8" />
       </div>
     </main>
   );
@@ -607,9 +650,16 @@ interface DisplaySectionProps {
   text: string;
   color: string;
   locked?: boolean;
+  onClick?: () => void;
 }
 
-function DisplaySection({ label, text, color, locked = false }: DisplaySectionProps) {
+function DisplaySection({
+  label,
+  text,
+  color,
+  locked = false,
+  onClick,
+}: DisplaySectionProps) {
   const [visible, setVisible] = useState(true);
   const [displayText, setDisplayText] = useState(text);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -630,9 +680,14 @@ function DisplaySection({ label, text, color, locked = false }: DisplaySectionPr
   }, [text, displayText]);
 
   return (
-    <div className="flex flex-col items-start gap-3">
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={locked}
+      className="group flex flex-col items-start gap-3 text-left"
+    >
       <span
-        className="rounded-sm px-2 py-[3px] text-[0.62rem] font-semibold uppercase tracking-[0.22em]"
+        className="rounded-sm px-2 py-[3px] text-[0.62rem] font-semibold uppercase tracking-[0.22em] transition-colors duration-150"
         style={{
           backgroundColor: locked ? "rgba(188, 188, 188, 0.72)" : color,
           color: locked ? "#5f5a54" : "#111",
@@ -641,7 +696,7 @@ function DisplaySection({ label, text, color, locked = false }: DisplaySectionPr
         {label}
       </span>
       <h2
-        className="max-w-[18ch] text-[1.1rem] font-medium leading-[1.08] tracking-tight text-[#111] transition-opacity duration-200 sm:text-[1.3rem] md:text-[1.7rem] lg:text-[2rem]"
+        className="max-w-[18ch] text-[1.1rem] font-medium leading-[1.08] tracking-tight text-[#111] transition-[opacity,color] duration-200 group-hover:text-[#6f6a63] sm:text-[1.3rem] md:text-[1.7rem] lg:text-[2rem]"
         style={{
           opacity: visible ? 1 : 0,
           color: locked ? "#7d7872" : "#111111",
@@ -649,7 +704,10 @@ function DisplaySection({ label, text, color, locked = false }: DisplaySectionPr
       >
         {displayText}
       </h2>
-    </div>
+      <span className="text-[0.58rem] uppercase tracking-[0.18em] text-[#b4aea4] opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        {locked ? "click to unlock" : "click to lock"}
+      </span>
+    </button>
   );
 }
 
