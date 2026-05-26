@@ -334,6 +334,7 @@ const X_STEP_PX = 220;
 const CHANGE_COOLDOWN_MS = 700;
 const DESKTOP_NOTE_BREAKPOINT = 1024;
 const NOTE_EDGE_PADDING = 24;
+const REVEAL_VIDEO_PATH = `${import.meta.env.BASE_URL}kaleidoscope-reveal.mp4`;
 const DEFAULT_NOTE_SURFACE: NoteSurfaceState = {
   rotateX: -2,
   rotateY: 4,
@@ -689,10 +690,33 @@ export default function Home() {
         ref={motionLayerRef}
         style={{ ["--divider-x" as string]: "50%" }}
       >
+        <div className="absolute inset-0 bg-[#f7f6f3]" />
         <div
-          className="absolute inset-y-0 left-0 bg-white"
+          className="absolute inset-y-0 left-0 overflow-hidden"
           style={{ width: "var(--divider-x)" }}
-        />
+        >
+          <video
+            className="h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            src={REVEAL_VIDEO_PATH}
+            style={{
+              filter: "grayscale(1) saturate(0.2) contrast(1.05) brightness(0.78)",
+              transform: "scale(1.02)",
+              opacity: 0.92,
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(247,246,243,0.14) 0%, rgba(247,246,243,0.28) 100%)",
+            }}
+          />
+        </div>
         <div
           className="absolute inset-y-0 w-px transition-[background-color,box-shadow] duration-150 ease-out"
           style={{
