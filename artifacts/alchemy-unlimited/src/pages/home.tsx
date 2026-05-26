@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 interface CuratedStatement {
   id: number;
@@ -23,6 +30,21 @@ interface LockState {
   why: string | null;
   who: string | null;
   how: string | null;
+}
+
+interface NotePosition {
+  x: number;
+  y: number;
+}
+
+interface NoteSurfaceState {
+  rotateX: number;
+  rotateY: number;
+  rotateZ: number;
+  scale: number;
+  shadowX: number;
+  shadowY: number;
+  shadowBlur: number;
 }
 
 type MenuSectionKey = "about" | "projects" | "ethos" | "contact";
@@ -310,6 +332,17 @@ const ACCENT_COLORS = [
 const CATEGORY_ORDER: VariableKey[] = ["what", "why", "who", "how"];
 const X_STEP_PX = 220;
 const CHANGE_COOLDOWN_MS = 700;
+const DESKTOP_NOTE_BREAKPOINT = 1024;
+const NOTE_EDGE_PADDING = 24;
+const DEFAULT_NOTE_SURFACE: NoteSurfaceState = {
+  rotateX: -2,
+  rotateY: 4,
+  rotateZ: -2.2,
+  scale: 1,
+  shadowX: 0,
+  shadowY: 18,
+  shadowBlur: 36,
+};
 
 const MENU_SECTIONS: {
   key: MenuSectionKey;
@@ -380,6 +413,12 @@ export default function Home() {
   const targetX = useRef(0.5);
   const rafRef = useRef<number | null>(null);
   const motionLayerRef = useRef<HTMLDivElement | null>(null);
+  const stickyNoteRef = useRef<HTMLDivElement | null>(null);
+  const stickyNoteDragRef = useRef({
+    active: false,
+    offsetX: 0,
+    offsetY: 0,
+  });
   const previousValuesRef = useRef<VariableState>({
     what: 0,
     why: 0,
@@ -405,10 +444,60 @@ export default function Home() {
   const [accentIndex, setAccentIndex] = useState(0);
   const [dividerFlashKey, setDividerFlashKey] = useState(0);
   const [activeMenuSection, setActiveMenuSection] = useState<MenuSectionKey>("about");
+  const [isDesktopNote, setIsDesktopNote] = useState(false);
+  const [isDraggingNote, setIsDraggingNote] = useState(false);
+  const [stickyNotePosition, setStickyNotePosition] = useState<NotePosition>({
+    x: 0,
+    y: 112,
+  });
+  const [stickyNoteSurface, setStickyNoteSurface] =
+    useState<NoteSurfaceState>(DEFAULT_NOTE_SURFACE);
 
   const updateDividerPosition = useCallback((normalisedX: number) => {
     const clamped = Math.max(0, Math.min(1, normalisedX));
     motionLayerRef.current?.style.setProperty("--divider-x", `${clamped * 100}%`);
+  }, []);
+
+  const clampStickyNotePosition = useCallback((position: NotePosition): NotePosition => {
+    if (typeof window === "undefined") return position;
+
+    const noteRect = stickyNoteRef.current?.getBoundingClientRect();
+    const noteWidth = noteRect?.width ?? 288;
+    const noteHeight = noteRect?.height ?? 360;
+    const maxX = Math.max(NOTE_EDGE_PADDING, window.innerWidth - noteWidth - NOTE_EDGE_PADDING);
+    const maxY = Math.max(NOTE_EDGE_PADDING, window.innerHeight - noteHeight - NOTE_EDGE_PADDING);
+
+    return {
+      x: Math.min(Math.max(position.x, NOTE_EDGE_PADDING), maxX),
+      y: Math.min(Math.max(position.y, NOTE_EDGE_PADDING), maxY),
+    };
+  }, []);
+
+  const updateStickyNoteSurface = useCallback(
+    (clientX: number, clientY: number, dragging = false) => {
+      const rect = stickyNoteRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const normalisedX = ((clientX - rect.left) / rect.width) * 2 - 1;
+      const normalisedY = ((clientY - rect.top) / rect.height) * 2 - 1;
+      const clampedX = Math.max(-1, Math.min(1, normalisedX));
+      const clampedY = Math.max(-1, Math.min(1, normalisedY));
+
+      setStickyNoteSurface({
+        rotateX: -clampedY * (dragging ? 10 : 6),
+        rotateY: clampedX * (dragging ? 11 : 7),
+        rotateZ: clampedX * (dragging ? 3.2 : 1.8) - 1.5,
+        scale: dragging ? 1.018 : 1.006,
+        shadowX: clampedX * (dragging ? 28 : 18),
+        shadowY: 18 + clampedY * (dragging ? 16 : 10),
+        shadowBlur: dragging ? 44 : 34,
+      });
+    },
+    [],
+  );
+
+  const resetStickyNoteSurface = useCallback(() => {
+    setStickyNoteSurface(DEFAULT_NOTE_SURFACE);
   }, []);
 
   const updateActiveValues = useCallback(() => {
@@ -471,11 +560,29 @@ export default function Home() {
     viewportWidthRef.current = window.innerWidth;
     lastBucketRef.current = Math.floor((smoothX.current * window.innerWidth) / X_STEP_PX);
     updateDividerPosition(targetX.current);
+    setIsDesktopNote(window.innerWidth >= DESKTOP_NOTE_BREAKPOINT);
+    setStickyNotePosition(
+      clampStickyNotePosition({
+        x: window.innerWidth - 320,
+        y: 132,
+      }),
+    );
 
     const onResize = () => {
       viewportWidthRef.current = window.innerWidth;
       lastBucketRef.current = Math.floor((smoothX.current * window.innerWidth) / X_STEP_PX);
       updateDividerPosition(targetX.current);
+      setIsDesktopNote(window.innerWidth >= DESKTOP_NOTE_BREAKPOINT);
+      setStickyNotePosition((current) =>
+        clampStickyNotePosition(
+          current.x === 0
+            ? {
+                x: window.innerWidth - 320,
+                y: 132,
+              }
+            : current,
+        ),
+      );
     };
 
     const onMove = (event: MouseEvent) => {
@@ -499,9 +606,51 @@ export default function Home() {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("touchmove", onTouchMove);
     };
-  }, [updateDividerPosition]);
+  }, [clampStickyNotePosition, updateDividerPosition]);
 
-  const accentColor = ACCENT_COLORS[accentIndex];
+  useEffect(() => {
+    if (!isDesktopNote) {
+      stickyNoteDragRef.current.active = false;
+      setIsDraggingNote(false);
+      resetStickyNoteSurface();
+      return;
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!stickyNoteDragRef.current.active) return;
+
+      const nextPosition = clampStickyNotePosition({
+        x: event.clientX - stickyNoteDragRef.current.offsetX,
+        y: event.clientY - stickyNoteDragRef.current.offsetY,
+      });
+
+      setStickyNotePosition(nextPosition);
+      updateStickyNoteSurface(event.clientX, event.clientY, true);
+    };
+
+    const endDrag = () => {
+      if (!stickyNoteDragRef.current.active) return;
+      stickyNoteDragRef.current.active = false;
+      setIsDraggingNote(false);
+      resetStickyNoteSurface();
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
+    };
+  }, [
+    clampStickyNotePosition,
+    isDesktopNote,
+    resetStickyNoteSurface,
+    updateStickyNoteSurface,
+  ]);
+
   const activeMenuContent =
     MENU_SECTIONS.find((section) => section.key === activeMenuSection) ?? MENU_SECTIONS[0];
   const currentValues = {
@@ -515,6 +664,18 @@ export default function Home() {
       ...current,
       [category]: current[category] === value ? null : value,
     }));
+  };
+  const startStickyNoteDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isDesktopNote || !stickyNoteRef.current) return;
+
+    const rect = stickyNoteRef.current.getBoundingClientRect();
+    stickyNoteDragRef.current = {
+      active: true,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+    };
+    setIsDraggingNote(true);
+    updateStickyNoteSurface(event.clientX, event.clientY, true);
   };
 
   return (
@@ -595,53 +756,133 @@ export default function Home() {
                 how={currentValues.how}
               />
             </section>
+
+            <div className="mt-8 lg:hidden">
+              <MenuNoteCard
+                activeMenuSection={activeMenuSection}
+                activeMenuContent={activeMenuContent}
+                setActiveMenuSection={setActiveMenuSection}
+              />
+            </div>
           </div>
 
-          <aside className="lg:pt-1">
-            <div className="border border-[#d8d1b6] bg-[#fff0a8]/90 p-4 shadow-[0_12px_28px_rgba(73,60,18,0.08)] backdrop-blur-sm">
-              <p className="mb-3 text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-[#6d6547]">
-                Menu
-              </p>
-
-              <div className="space-y-1">
-                {MENU_SECTIONS.map((section) => {
-                  const isActive = section.key === activeMenuSection;
-
-                  return (
-                    <button
-                      key={section.key}
-                      type="button"
-                      onClick={() => setActiveMenuSection(section.key)}
-                      className="flex w-full items-center justify-between border border-transparent px-2 py-2 text-left transition-colors duration-150 hover:bg-white/45"
-                      style={{
-                        backgroundColor: isActive ? "rgba(255, 255, 255, 0.54)" : "transparent",
-                        borderColor: isActive ? "rgba(109, 101, 71, 0.24)" : "transparent",
-                      }}
-                    >
-                      <span className="text-[0.9rem] text-[#353126]">{section.label}</span>
-                      <span className="text-[0.68rem] text-[#8c8468]">
-                        {isActive ? "open" : ""}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-5 border-t border-[#d8d1b6] pt-4">
-                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#8c8468]">
-                  {activeMenuContent.eyebrow}
-                </p>
-                <p className="mt-3 text-[0.83rem] leading-[1.6] text-[#403a2c]">
-                  {activeMenuContent.body}
-                </p>
-              </div>
-            </div>
-          </aside>
+          <div className="hidden lg:block" aria-hidden />
         </div>
+
+        {isDesktopNote ? (
+          <div
+            ref={stickyNoteRef}
+            className="fixed z-20 hidden w-[17rem] select-none lg:block"
+            style={{
+              left: stickyNotePosition.x,
+              top: stickyNotePosition.y,
+              transform: `perspective(1400px) rotateX(${stickyNoteSurface.rotateX}deg) rotateY(${stickyNoteSurface.rotateY}deg) rotateZ(${stickyNoteSurface.rotateZ}deg) scale(${stickyNoteSurface.scale})`,
+              transformStyle: "preserve-3d",
+              filter: isDraggingNote ? "saturate(1.03)" : "none",
+            }}
+            onPointerEnter={(event) =>
+              updateStickyNoteSurface(event.clientX, event.clientY, isDraggingNote)
+            }
+            onPointerMove={(event) => {
+              if (isDraggingNote) return;
+              updateStickyNoteSurface(event.clientX, event.clientY, false);
+            }}
+            onPointerLeave={() => {
+              if (isDraggingNote) return;
+              resetStickyNoteSurface();
+            }}
+          >
+            <MenuNoteCard
+              activeMenuSection={activeMenuSection}
+              activeMenuContent={activeMenuContent}
+              setActiveMenuSection={setActiveMenuSection}
+              onDragHandlePointerDown={startStickyNoteDrag}
+              shadowStyle={{
+                boxShadow: `${stickyNoteSurface.shadowX}px ${stickyNoteSurface.shadowY}px ${stickyNoteSurface.shadowBlur}px rgba(73, 60, 18, 0.18), 0 12px 20px rgba(73, 60, 18, 0.08)`,
+              }}
+            />
+          </div>
+        ) : null}
 
         <footer className="mt-auto pt-6 md:pt-8" />
       </div>
     </main>
+  );
+}
+
+interface MenuNoteCardProps {
+  activeMenuSection: MenuSectionKey;
+  activeMenuContent: {
+    key: MenuSectionKey;
+    label: string;
+    eyebrow: string;
+    body: string;
+  };
+  setActiveMenuSection: (value: MenuSectionKey) => void;
+  onDragHandlePointerDown?: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  shadowStyle?: CSSProperties;
+}
+
+function MenuNoteCard({
+  activeMenuSection,
+  activeMenuContent,
+  setActiveMenuSection,
+  onDragHandlePointerDown,
+  shadowStyle,
+}: MenuNoteCardProps) {
+  return (
+    <div
+      className="border border-[#d8d1b6] bg-[#fff0a8]/92 p-4 backdrop-blur-sm"
+      style={{
+        boxShadow: "0 14px 28px rgba(73, 60, 18, 0.12)",
+        ...shadowStyle,
+      }}
+    >
+      <div
+        className={`mb-3 flex items-center justify-between ${
+          onDragHandlePointerDown ? "cursor-grab touch-none active:cursor-grabbing" : ""
+        }`}
+        onPointerDown={onDragHandlePointerDown}
+      >
+        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-[#6d6547]">
+          Menu
+        </p>
+        <span className="relative h-5 w-5 rounded-full bg-[#f1df83] shadow-[inset_0_1px_1px_rgba(255,255,255,0.65)]">
+          <span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#927f2b]" />
+        </span>
+      </div>
+
+      <div className="space-y-1">
+        {MENU_SECTIONS.map((section) => {
+          const isActive = section.key === activeMenuSection;
+
+          return (
+            <button
+              key={section.key}
+              type="button"
+              onClick={() => setActiveMenuSection(section.key)}
+              className="flex w-full items-center justify-between border border-transparent px-2 py-2 text-left transition-colors duration-150 hover:bg-white/45"
+              style={{
+                backgroundColor: isActive ? "rgba(255, 255, 255, 0.54)" : "transparent",
+                borderColor: isActive ? "rgba(109, 101, 71, 0.24)" : "transparent",
+              }}
+            >
+              <span className="text-[0.9rem] text-[#353126]">{section.label}</span>
+              <span className="text-[0.68rem] text-[#8c8468]">{isActive ? "open" : ""}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 border-t border-[#d8d1b6] pt-4">
+        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#8c8468]">
+          {activeMenuContent.eyebrow}
+        </p>
+        <p className="mt-3 text-[0.83rem] leading-[1.6] text-[#403a2c]">
+          {activeMenuContent.body}
+        </p>
+      </div>
+    </div>
   );
 }
 
