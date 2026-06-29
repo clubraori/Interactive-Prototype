@@ -1,22 +1,14 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
-  useCallback,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
-interface CuratedStatement {
-  id: number;
-  what: string;
-  why: string;
-  who: string;
-  how: string;
-  statement: string;
-}
-
 type VariableKey = "what" | "why" | "who" | "how";
+type MenuSectionKey = "about" | "lenses" | "community" | "contact";
 
 interface VariableState {
   what: number;
@@ -47,294 +39,77 @@ interface NoteSurfaceState {
   shadowBlur: number;
 }
 
-type MenuSectionKey = "about" | "projects" | "ethos" | "contact";
+interface MenuSectionContent {
+  key: MenuSectionKey;
+  label: string;
+  eyebrow: string;
+  body: string;
+}
 
-const FALLBACK_STATEMENTS: CuratedStatement[] = [
-  {
-    id: 1,
-    what: "interdisciplinary creative practice",
-    why: "more equitable access to creative capital",
-    who: "creative communities",
-    how: "co-design",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in interdisciplinary creative practice. We are committed to more equitable access to creative capital for creative communities. We approach our work through co-design.",
-  },
-  {
-    id: 2,
-    what: "creative consulting",
-    why: "meaningful action through creative strategies",
-    who: "impact-oriented institutions",
-    how: "creative consultation",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in creative consulting. We are committed to meaningful action through creative strategies for impact-oriented institutions. We approach our work through creative consultation.",
-  },
-  {
-    id: 3,
-    what: "community engagement",
-    why: "re-engagement with our surroundings",
-    who: "community organizations",
-    how: "hands-on interactive processes",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in community engagement. We are committed to re-engagement with our surroundings for community organizations. We approach our work through hands-on interactive processes.",
-  },
-  {
-    id: 4,
-    what: "curatorial practice",
-    why: "public connection across art, science, and culture",
-    who: "public-facing arts organizations",
-    how: "workshops, installations and situated activations",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in curatorial practice. We are committed to public connection across art, science, and culture for public-facing arts organizations. We approach our work through workshops, installations and situated activations.",
-  },
-  {
-    id: 5,
-    what: "programming",
-    why: "education",
-    who: "academic institutions",
-    how: "facilitation",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in programming. We are committed to education for academic institutions. We approach our work through facilitation.",
-  },
-  {
-    id: 6,
-    what: "creative community building",
-    why: "deeper audience engagement",
-    who: "cultural institutions",
-    how: "a creative producing framework",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in creative community building. We are committed to deeper audience engagement for cultural institutions. We approach our work through a creative producing framework.",
-  },
-  {
-    id: 7,
-    what: "art-based practices that solve or highlight issues",
-    why: "sustainable and ethical practice",
-    who: "nonprofits",
-    how: "empathy and care",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in art-based practices that solve or highlight issues. We are committed to sustainable and ethical practice for nonprofits. We approach our work through empathy and care.",
-  },
-  {
-    id: 8,
-    what: "strategies for accessing creativity",
-    why: "unblocking creative sticking points",
-    who: "learners and students",
-    how: "guiding",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in strategies for accessing creativity. We are committed to unblocking creative sticking points for learners and students. We approach our work through guiding.",
-  },
-  {
-    id: 9,
-    what: "thought leadership",
-    why: "expanding boundaries of creative practice",
-    who: "innovation institutions",
-    how: "interdisciplinary thinking",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in thought leadership. We are committed to expanding boundaries of creative practice for innovation institutions. We approach our work through interdisciplinary thinking.",
-  },
-  {
-    id: 10,
-    what: "creative producing",
-    why: "better organization of brainpower and creative energy",
-    who: "startups",
-    how: "process-oriented collaboration",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in creative producing. We are committed to better organization of brainpower and creative energy for startups. We approach our work through process-oriented collaboration.",
-  },
-  {
-    id: 11,
-    what: "creative consulting",
-    why: "awareness",
-    who: "advocacy groups",
-    how: "stakeholder dialogue",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in creative consulting. We are committed to awareness for advocacy groups. We approach our work through stakeholder dialogue.",
-  },
-  {
-    id: 12,
-    what: "community engagement",
-    why: "deeper audience engagement",
-    who: "creative communities",
-    how: "art thinking",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in community engagement. We are committed to deeper audience engagement for creative communities. We approach our work through art thinking.",
-  },
-  {
-    id: 13,
-    what: "curatorial practice",
-    why: "entertainment",
-    who: "conveners",
-    how: "workshops, installations and situated activations",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in curatorial practice. We are committed to entertainment for conveners. We approach our work through workshops, installations and situated activations.",
-  },
-  {
-    id: 14,
-    what: "interdisciplinary creative practice",
-    why: "public connection across art, science, and culture",
-    who: "immersive and emerging technology studios",
-    how: "interdisciplinary thinking",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in interdisciplinary creative practice. We are committed to public connection across art, science, and culture for immersive and emerging technology studios. We approach our work through interdisciplinary thinking.",
-  },
-  {
-    id: 15,
-    what: "creative community building",
-    why: "more equitable access to creative capital",
-    who: "artists and creatives",
-    how: "facilitation",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in creative community building. We are committed to more equitable access to creative capital for artists and creatives. We approach our work through facilitation.",
-  },
-  {
-    id: 16,
-    what: "strategies for accessing creativity",
-    why: "education",
-    who: "learners and students",
-    how: "co-design",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in strategies for accessing creativity. We are committed to education for learners and students. We approach our work through co-design.",
-  },
-  {
-    id: 17,
-    what: "art-based practices that solve or highlight issues",
-    why: "awareness",
-    who: "advocacy groups",
-    how: "hands-on interactive processes",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in art-based practices that solve or highlight issues. We are committed to awareness for advocacy groups. We approach our work through hands-on interactive processes.",
-  },
-  {
-    id: 18,
-    what: "thought leadership",
-    why: "sustainable and ethical practice",
-    who: "innovation institutions",
-    how: "stakeholder dialogue",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in thought leadership. We are committed to sustainable and ethical practice for innovation institutions. We approach our work through stakeholder dialogue.",
-  },
-  {
-    id: 19,
-    what: "programming",
-    why: "meaningful action through creative strategies",
-    who: "creative technology organizations",
-    how: "design thinking",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in programming. We are committed to meaningful action through creative strategies for creative technology organizations. We approach our work through design thinking.",
-  },
-  {
-    id: 20,
-    what: "networking",
-    why: "deeper audience engagement",
-    who: "conveners",
-    how: "facilitation",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in networking. We are committed to deeper audience engagement for conveners. We approach our work through facilitation.",
-  },
-  {
-    id: 21,
-    what: "creative producing",
-    why: "expanding boundaries of creative practice",
-    who: "immersive and emerging technology studios",
-    how: "a creative producing framework",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in creative producing. We are committed to expanding boundaries of creative practice for immersive and emerging technology studios. We approach our work through a creative producing framework.",
-  },
-  {
-    id: 22,
-    what: "creative consulting",
-    why: "better organization of brainpower and creative energy",
-    who: "startups",
-    how: "design thinking",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in creative consulting. We are committed to better organization of brainpower and creative energy for startups. We approach our work through design thinking.",
-  },
-  {
-    id: 23,
-    what: "community engagement",
-    why: "re-engagement with each other",
-    who: "creative communities",
-    how: "empathy and care",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in community engagement. We are committed to re-engagement with each other for creative communities. We approach our work through empathy and care.",
-  },
-  {
-    id: 24,
-    what: "curatorial practice",
-    why: "a more wholesome built environment",
-    who: "public-facing arts organizations",
-    how: "art thinking",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in curatorial practice. We are committed to a more wholesome built environment for public-facing arts organizations. We approach our work through art thinking.",
-  },
-  {
-    id: 25,
-    what: "interdisciplinary creative practice",
-    why: "education",
-    who: "academic institutions",
-    how: "process-oriented collaboration",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in interdisciplinary creative practice. We are committed to education for academic institutions. We approach our work through process-oriented collaboration.",
-  },
-  {
-    id: 26,
-    what: "strategies for accessing creativity",
-    why: "more equitable access to creative capital",
-    who: "inclusive technology organizations",
-    how: "guiding",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in strategies for accessing creativity. We are committed to more equitable access to creative capital for inclusive technology organizations. We approach our work through guiding.",
-  },
-  {
-    id: 27,
-    what: "art-based practices that solve or highlight issues",
-    why: "meaningful action through creative strategies",
-    who: "impact-oriented institutions",
-    how: "co-design",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in art-based practices that solve or highlight issues. We are committed to meaningful action through creative strategies for impact-oriented institutions. We approach our work through co-design.",
-  },
-  {
-    id: 28,
-    what: "thought leadership",
-    why: "awareness",
-    who: "cultural institutions",
-    how: "stakeholder dialogue",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in thought leadership. We are committed to awareness for cultural institutions. We approach our work through stakeholder dialogue.",
-  },
-  {
-    id: 29,
-    what: "creative community building",
-    why: "re-engagement with our surroundings",
-    who: "community organizations",
-    how: "hands-on interactive processes",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in creative community building. We are committed to re-engagement with our surroundings for community organizations. We approach our work through hands-on interactive processes.",
-  },
-  {
-    id: 30,
-    what: "creative producing",
-    why: "public connection across art, science, and culture",
-    who: "artists and creatives",
-    how: "art thinking",
-    statement:
-      "We at Alchemy Unlimited are a collection of creative alchemists who are interested in creative producing. We are committed to public connection across art, science, and culture for artists and creatives. We approach our work through art thinking.",
-  },
-];
-
-const ACCENT_COLORS = [
-  "hsl(54, 100%, 88%)",
-  "hsl(340, 80%, 92%)",
-  "hsl(210, 80%, 92%)",
-  "hsl(138, 60%, 88%)",
-];
+const VALUE_BANKS: Record<VariableKey, string[]> = {
+  what: [
+    "interdisciplinary creative practice",
+    "creative consulting",
+    "community engagement",
+    "curatorial practice",
+    "creative community building",
+    "strategies for accessing creativity",
+    "thought leadership",
+    "creative producing",
+    "public-facing creative systems",
+    "field-tested cultural strategy",
+    "participatory formats",
+  ],
+  why: [
+    "more equitable access to creative capital",
+    "meaningful action through creative strategies",
+    "re-engagement with our surroundings",
+    "public connection across art, science, and culture",
+    "deeper audience engagement",
+    "sustainable and ethical practice",
+    "expanding boundaries of creative practice",
+    "better organization of brainpower and creative energy",
+    "organic community building",
+    "more legible ways of seeing",
+    "shared momentum before launch",
+  ],
+  who: [
+    "creative communities",
+    "impact-oriented institutions",
+    "community organizations",
+    "public-facing arts organizations",
+    "academic institutions",
+    "cultural institutions",
+    "learners and students",
+    "innovation institutions",
+    "conveners",
+    "artists and creatives",
+    "early collaborators and alumni",
+  ],
+  how: [
+    "co-design",
+    "creative consultation",
+    "hands-on interactive processes",
+    "workshops, installations and situated activations",
+    "facilitation",
+    "a creative producing framework",
+    "empathy and care",
+    "interdisciplinary thinking",
+    "process-oriented collaboration",
+    "outside perspective",
+    "preview circles and field notes",
+  ],
+};
 
 const CATEGORY_ORDER: VariableKey[] = ["what", "why", "who", "how"];
-const X_STEP_PX = 220;
-const CHANGE_COOLDOWN_MS = 700;
+const ACCENT_COLORS = ["#ff8a47", "#55d6c2", "#9f94ff", "#ffd35a"];
+const X_STEP_PX = 190;
+const Y_STEP_PX = 150;
+const CHANGE_COOLDOWN_MS = 1800;
 const DESKTOP_NOTE_BREAKPOINT = 1024;
 const NOTE_EDGE_PADDING = 24;
 const REVEAL_VIDEO_PATH = `${import.meta.env.BASE_URL}kaleidoscope-reveal.mp4`;
+
 const DEFAULT_NOTE_SURFACE: NoteSurfaceState = {
   rotateX: -2,
   rotateY: 4,
@@ -345,73 +120,57 @@ const DEFAULT_NOTE_SURFACE: NoteSurfaceState = {
   shadowBlur: 36,
 };
 
-const MENU_SECTIONS: {
-  key: MenuSectionKey;
-  label: string;
-  eyebrow: string;
-  body: string;
-}[] = [
+const MENU_SECTIONS: MenuSectionContent[] = [
   {
     key: "about",
     label: "About",
     eyebrow: "Alchemy Unlimited",
     body:
-      "Placeholder copy for a concise introduction to the studio, its collaborators, and the kind of interdisciplinary creative practice you bring together.",
+      "A strategy-led creative studio building participatory systems, public-facing formats, and narrative structures for culture, learning, and emerging technology.",
   },
   {
-    key: "projects",
-    label: "Projects",
-    eyebrow: "Selected Work",
+    key: "lenses",
+    label: "Lenses",
+    eyebrow: "Multiple ways of seeing",
     body:
-      "Placeholder copy for a short list or summary of previous commissions, activations, workshops, and collaborations across culture, education, and emerging technology.",
+      "The page behaves like the practice: a field of lenses, filters, and layered readings that turn one set of material into many possible forms.",
   },
   {
-    key: "ethos",
-    label: "Ethos",
-    eyebrow: "Methodology",
+    key: "community",
+    label: "Community",
+    eyebrow: "Early circle",
     body:
-      "Placeholder copy for the card-game-inspired framework Nick is developing, explaining how your design philosophy helps people locate themselves inside the work.",
+      "The next layer is a small internal list for alumni, peers, and early collaborators: previews, toolkit prototypes, and work-in-progress thinking.",
   },
   {
     key: "contact",
     label: "Contact",
-    eyebrow: "Get In Touch",
+    eyebrow: "Outside perspective",
     body:
-      "Placeholder copy for contact details, availability, studio location, or an invitation for potential collaborators, clients, and institutions to start a conversation.",
+      "Regular third-party conversations help test whether Alchemy is legible beyond the collaboration and reveal what the work is asking to become.",
   },
 ];
 
-function uniqueValues(
-  statements: CuratedStatement[],
-  key: VariableKey,
-): string[] {
-  return Array.from(new Set(statements.map((statement) => cleanPhrase(statement[key]))));
-}
-
-function cleanPhrase(value: string): string {
-  return value.trim().replace(/\s+/g, " ").replace(/[.]+$/g, "");
-}
-
-function pickIndex(normalised: number, length: number): number {
-  if (length <= 1) return 0;
-  const clamped = Math.max(0, Math.min(1, normalised));
-  return Math.min(Math.floor(clamped * length), length - 1);
-}
+const FIELD_NOTES = [
+  "Multiple lenses",
+  "Shared creative capital",
+  "Playfulness as a valid day-one signal",
+];
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
-const VALUE_BANKS = {
-  what: uniqueValues(FALLBACK_STATEMENTS, "what"),
-  why: uniqueValues(FALLBACK_STATEMENTS, "why"),
-  who: uniqueValues(FALLBACK_STATEMENTS, "who"),
-  how: uniqueValues(FALLBACK_STATEMENTS, "how"),
-};
+function positiveMod(value: number, length: number): number {
+  return ((value % length) + length) % length;
+}
 
 export default function Home() {
-  const smoothX = useRef(0.5);
-  const targetX = useRef(0.5);
+  const smoothX = useRef(0.38);
+  const smoothY = useRef(0.42);
+  const targetX = useRef(0.38);
+  const targetY = useRef(0.42);
+  const hasExplored = useRef(false);
   const rafRef = useRef<number | null>(null);
   const motionLayerRef = useRef<HTMLDivElement | null>(null);
   const stickyNoteRef = useRef<HTMLDivElement | null>(null);
@@ -422,13 +181,13 @@ export default function Home() {
   });
   const previousValuesRef = useRef<VariableState>({
     what: 0,
-    why: 0,
-    who: 0,
+    why: 4,
+    who: 1,
     how: 0,
   });
-  const lastBucketRef = useRef(0);
+  const lastBucketRef = useRef({ x: -1, y: -1 });
   const lastChangeAtRef = useRef(0);
-  const viewportWidthRef = useRef(1440);
+  const viewportRef = useRef({ width: 1440, height: 900 });
 
   const [indices, setIndices] = useState<VariableState>({
     what: 0,
@@ -443,7 +202,7 @@ export default function Home() {
     how: null,
   });
   const [accentIndex, setAccentIndex] = useState(0);
-  const [dividerFlashKey, setDividerFlashKey] = useState(0);
+  const [pulseKey, setPulseKey] = useState(0);
   const [activeMenuSection, setActiveMenuSection] = useState<MenuSectionKey>("about");
   const [isDesktopNote, setIsDesktopNote] = useState(false);
   const [isDraggingNote, setIsDraggingNote] = useState(false);
@@ -454,9 +213,23 @@ export default function Home() {
   const [stickyNoteSurface, setStickyNoteSurface] =
     useState<NoteSurfaceState>(DEFAULT_NOTE_SURFACE);
 
-  const updateDividerPosition = useCallback((normalisedX: number) => {
-    const clamped = Math.max(0, Math.min(1, normalisedX));
-    motionLayerRef.current?.style.setProperty("--divider-x", `${clamped * 100}%`);
+  const updateMotionVariables = useCallback((normalisedX: number, normalisedY: number) => {
+    const x = Math.max(0, Math.min(1, normalisedX));
+    const y = Math.max(0, Math.min(1, normalisedY));
+    const layer = motionLayerRef.current;
+    if (!layer) return;
+
+    layer.style.setProperty("--clarity-x", `${x * 100}%`);
+    layer.style.setProperty("--lens-x", `${x * 100}%`);
+    layer.style.setProperty("--lens-y", `${y * 100}%`);
+    layer.style.setProperty("--pixel-size", `${Math.round(5 + y * 19)}px`);
+    layer.style.setProperty("--pixel-opacity", `${0.08 + y * 0.28}`);
+    layer.style.setProperty("--scan-opacity", `${0.04 + y * 0.18}`);
+    layer.style.setProperty("--hue-rotate", `${Math.round((y - 0.5) * 48)}deg`);
+    layer.style.setProperty("--saturate", `${0.76 + y * 0.72}`);
+    layer.style.setProperty("--contrast", `${0.94 + x * 0.16}`);
+    layer.style.setProperty("--warm-opacity", `${Math.max(0, y - 0.22) * 0.42}`);
+    layer.style.setProperty("--cool-opacity", `${Math.max(0, 0.78 - y) * 0.34}`);
   }, []);
 
   const clampStickyNotePosition = useCallback((position: NotePosition): NotePosition => {
@@ -502,50 +275,50 @@ export default function Home() {
   }, []);
 
   const updateActiveValues = useCallback(() => {
-    const viewportWidth = Math.max(viewportWidthRef.current, 1);
-    const xPx = smoothX.current * viewportWidth;
-    const bucket = Math.floor(xPx / X_STEP_PX);
+    const viewportWidth = Math.max(viewportRef.current.width, 1);
+    const viewportHeight = Math.max(viewportRef.current.height, 1);
+    const bucketX = Math.floor((smoothX.current * viewportWidth) / X_STEP_PX);
+    const bucketY = Math.floor((smoothY.current * viewportHeight) / Y_STEP_PX);
+    const previousBucket = lastBucketRef.current;
     const now = Date.now();
 
-    if (bucket === lastBucketRef.current) return;
+    if (bucketX === previousBucket.x && bucketY === previousBucket.y) return;
     if (now - lastChangeAtRef.current < CHANGE_COOLDOWN_MS) return;
 
-    lastBucketRef.current = bucket;
+    lastBucketRef.current = { x: bucketX, y: bucketY };
     lastChangeAtRef.current = now;
 
     const next = {
-      what: ((bucket % VALUE_BANKS.what.length) + VALUE_BANKS.what.length) % VALUE_BANKS.what.length,
-      why:
-        ((Math.floor(bucket / 2) % VALUE_BANKS.why.length) + VALUE_BANKS.why.length) %
-        VALUE_BANKS.why.length,
-      who:
-        ((Math.floor(bucket / 3) % VALUE_BANKS.who.length) + VALUE_BANKS.who.length) %
-        VALUE_BANKS.who.length,
-      how:
-        ((Math.floor(bucket / 4) % VALUE_BANKS.how.length) + VALUE_BANKS.how.length) %
-        VALUE_BANKS.how.length,
+      what: positiveMod(bucketX + bucketY, VALUE_BANKS.what.length),
+      why: positiveMod(bucketX * 2 + bucketY * 3, VALUE_BANKS.why.length),
+      who: positiveMod(bucketX * 3 + bucketY, VALUE_BANKS.who.length),
+      how: positiveMod(bucketX + bucketY * 2, VALUE_BANKS.how.length),
     };
     const previous = previousValuesRef.current;
-
     const changed = CATEGORY_ORDER.some((category) => next[category] !== previous[category]);
 
     if (changed) {
       previousValuesRef.current = next;
       setIndices(next);
       setAccentIndex((value) => (value + 1) % ACCENT_COLORS.length);
-      setDividerFlashKey((value) => value + 1);
+      setPulseKey((value) => value + 1);
 
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        navigator.vibrate(10);
+        navigator.vibrate(8);
       }
     }
   }, []);
 
   useEffect(() => {
-    const speed = 0.02;
+    const loop = (time: number) => {
+      if (!hasExplored.current) {
+        targetX.current = 0.43 + Math.sin(time / 1800) * 0.2;
+        targetY.current = 0.47 + Math.cos(time / 2300) * 0.18;
+      }
 
-    const loop = () => {
-      smoothX.current = lerp(smoothX.current, targetX.current, speed);
+      smoothX.current = lerp(smoothX.current, targetX.current, 0.045);
+      smoothY.current = lerp(smoothY.current, targetY.current, 0.045);
+      updateMotionVariables(smoothX.current, smoothY.current);
       updateActiveValues();
 
       rafRef.current = requestAnimationFrame(loop);
@@ -555,31 +328,42 @@ export default function Home() {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [updateActiveValues]);
+  }, [updateActiveValues, updateMotionVariables]);
 
   useEffect(() => {
-    viewportWidthRef.current = window.innerWidth;
-    lastBucketRef.current = Math.floor((smoothX.current * window.innerWidth) / X_STEP_PX);
-    updateDividerPosition(targetX.current);
+    viewportRef.current = {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    };
+    lastBucketRef.current = {
+      x: Math.floor((smoothX.current * window.innerWidth) / X_STEP_PX),
+      y: Math.floor((smoothY.current * window.innerHeight) / Y_STEP_PX),
+    };
+    updateMotionVariables(targetX.current, targetY.current);
     setIsDesktopNote(window.innerWidth >= DESKTOP_NOTE_BREAKPOINT);
     setStickyNotePosition(
       clampStickyNotePosition({
-        x: window.innerWidth - 320,
-        y: 132,
+        x: window.innerWidth - 330,
+        y: 118,
       }),
     );
 
     const onResize = () => {
-      viewportWidthRef.current = window.innerWidth;
-      lastBucketRef.current = Math.floor((smoothX.current * window.innerWidth) / X_STEP_PX);
-      updateDividerPosition(targetX.current);
+      viewportRef.current = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      };
+      lastBucketRef.current = {
+        x: Math.floor((smoothX.current * window.innerWidth) / X_STEP_PX),
+        y: Math.floor((smoothY.current * window.innerHeight) / Y_STEP_PX),
+      };
       setIsDesktopNote(window.innerWidth >= DESKTOP_NOTE_BREAKPOINT);
       setStickyNotePosition((current) =>
         clampStickyNotePosition(
           current.x === 0
             ? {
-                x: window.innerWidth - 320,
-                y: 132,
+                x: window.innerWidth - 330,
+                y: 118,
               }
             : current,
         ),
@@ -587,15 +371,19 @@ export default function Home() {
     };
 
     const onMove = (event: MouseEvent) => {
+      hasExplored.current = true;
       targetX.current = event.clientX / window.innerWidth;
-      updateDividerPosition(targetX.current);
+      targetY.current = event.clientY / window.innerHeight;
+      updateMotionVariables(targetX.current, targetY.current);
     };
 
     const onTouchMove = (event: TouchEvent) => {
       const touch = event.touches[0];
       if (!touch) return;
+      hasExplored.current = true;
       targetX.current = touch.clientX / window.innerWidth;
-      updateDividerPosition(targetX.current);
+      targetY.current = touch.clientY / window.innerHeight;
+      updateMotionVariables(targetX.current, targetY.current);
     };
 
     window.addEventListener("resize", onResize);
@@ -607,7 +395,7 @@ export default function Home() {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("touchmove", onTouchMove);
     };
-  }, [clampStickyNotePosition, updateDividerPosition]);
+  }, [clampStickyNotePosition, updateMotionVariables]);
 
   useEffect(() => {
     if (!isDesktopNote) {
@@ -652,6 +440,7 @@ export default function Home() {
     updateStickyNoteSurface,
   ]);
 
+  const activeAccent = ACCENT_COLORS[accentIndex];
   const activeMenuContent =
     MENU_SECTIONS.find((section) => section.key === activeMenuSection) ?? MENU_SECTIONS[0];
   const currentValues = {
@@ -660,12 +449,14 @@ export default function Home() {
     who: locks.who ?? VALUE_BANKS.who[indices.who],
     how: locks.how ?? VALUE_BANKS.how[indices.how],
   };
+
   const toggleLock = (category: VariableKey, value: string) => {
     setLocks((current) => ({
       ...current,
       [category]: current[category] === value ? null : value,
     }));
   };
+
   const startStickyNoteDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!isDesktopNote || !stickyNoteRef.current) return;
 
@@ -682,21 +473,52 @@ export default function Home() {
   return (
     <main
       style={{ fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }}
-      className="min-h-screen bg-[#f7f6f3] text-[#111111] relative overflow-hidden"
+      className="relative min-h-screen overflow-hidden bg-[#11100f] text-[#f8f4ea]"
     >
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 z-0"
         ref={motionLayerRef}
-        style={{ ["--divider-x" as string]: "50%" }}
+        className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+        style={{
+          ["--clarity-x" as string]: "38%",
+          ["--lens-x" as string]: "38%",
+          ["--lens-y" as string]: "42%",
+          ["--pixel-size" as string]: "12px",
+          ["--pixel-opacity" as string]: "0.16",
+          ["--scan-opacity" as string]: "0.08",
+          ["--hue-rotate" as string]: "0deg",
+          ["--saturate" as string]: "1",
+          ["--contrast" as string]: "1",
+          ["--warm-opacity" as string]: "0.12",
+          ["--cool-opacity" as string]: "0.18",
+        }}
       >
-        <div className="absolute inset-0 bg-[#f7f6f3]" />
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          src={REVEAL_VIDEO_PATH}
+          style={{
+            filter:
+              "blur(11px) grayscale(0.2) hue-rotate(var(--hue-rotate)) saturate(var(--saturate)) contrast(var(--contrast)) brightness(0.72)",
+            transform: "scale(1.05)",
+          }}
+        />
         <div
           className="absolute inset-y-0 left-0 overflow-hidden"
-          style={{ width: "var(--divider-x)" }}
+          style={{
+            width: "var(--clarity-x)",
+            WebkitMaskImage:
+              "linear-gradient(90deg, #000 0%, #000 calc(100% - 96px), transparent 100%)",
+            maskImage:
+              "linear-gradient(90deg, #000 0%, #000 calc(100% - 96px), transparent 100%)",
+          }}
         >
           <video
-            className="h-full w-full object-cover"
+            className="h-full max-w-none object-cover"
             autoPlay
             muted
             loop
@@ -704,144 +526,169 @@ export default function Home() {
             preload="metadata"
             src={REVEAL_VIDEO_PATH}
             style={{
-              filter: "grayscale(1) saturate(0.2) contrast(1.05) brightness(0.78)",
-              transform: "scale(1.02)",
-              opacity: 0.92,
-            }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(247,246,243,0.14) 0%, rgba(247,246,243,0.28) 100%)",
+              width: "100vw",
+              filter:
+                "hue-rotate(var(--hue-rotate)) saturate(calc(var(--saturate) + 0.24)) contrast(calc(var(--contrast) + 0.06)) brightness(0.9)",
             }}
           />
         </div>
         <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(28,117,128,var(--cool-opacity)) 0%, transparent 48%, rgba(255,103,55,var(--warm-opacity)) 100%)",
+            mixBlendMode: "screen",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.18) 1px, transparent 1px)",
+            backgroundSize: "var(--pixel-size) var(--pixel-size)",
+            opacity: "var(--pixel-opacity)",
+            mixBlendMode: "overlay",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(180deg, transparent 0, transparent 5px, rgba(255,255,255,0.22) 6px)",
+            opacity: "var(--scan-opacity)",
+            mixBlendMode: "soft-light",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at var(--lens-x) var(--lens-y), rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.12) 9%, transparent 24%), linear-gradient(90deg, rgba(17,16,15,0.1) 0%, rgba(17,16,15,0.36) 100%)",
+          }}
+        />
+        <div
           className="absolute inset-y-0 w-px transition-[background-color,box-shadow] duration-150 ease-out"
           style={{
-            left: "calc(var(--divider-x) - 0.5px)",
-            backgroundColor: dividerFlashKey % 2 === 0 ? "rgba(17,17,17,0.18)" : "rgba(17,17,17,0.34)",
+            left: "calc(var(--clarity-x) - 0.5px)",
+            backgroundColor: pulseKey % 2 === 0 ? "rgba(248,244,234,0.34)" : activeAccent,
             boxShadow:
-              dividerFlashKey % 2 === 0
-                ? "0 0 0 transparent"
-                : "0 0 18px rgba(17,17,17,0.12)",
+              pulseKey % 2 === 0
+                ? "0 0 26px rgba(248,244,234,0.18)"
+                : `0 0 36px ${activeAccent}`,
           }}
         />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8 md:px-10 md:py-10">
-        <header className="mb-8 md:mb-10">
-          <span className="text-[0.65rem] tracking-[0.3em] uppercase text-[#888] font-medium">
-            Alchemy Unlimited
-          </span>
+      <div className="pointer-events-none fixed inset-0 z-[1] bg-[radial-gradient(circle_at_42%_34%,rgba(255,255,255,0.08),transparent_34%),linear-gradient(180deg,rgba(17,16,15,0.24),rgba(17,16,15,0.7))]" />
+
+      <div className="relative z-10 flex min-h-screen flex-col px-5 py-5 sm:px-7 md:px-10 md:py-8">
+        <header className="flex items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <span className="h-3 w-3 bg-[#ff6737]" />
+            <span className="text-[0.92rem] font-semibold text-[#fffaf0]">
+              Alchemy Unlimited
+            </span>
+          </div>
+
+          <nav className="hidden items-center gap-5 md:flex">
+            {MENU_SECTIONS.map((section) => {
+              const isActive = section.key === activeMenuSection;
+
+              return (
+                <button
+                  key={section.key}
+                  type="button"
+                  onClick={() => setActiveMenuSection(section.key)}
+                  className="text-[0.78rem] font-semibold uppercase tracking-[0.14em] transition-colors duration-150"
+                  style={{
+                    color: isActive ? "#fffaf0" : "rgba(255,250,240,0.58)",
+                  }}
+                >
+                  {section.label}
+                </button>
+              );
+            })}
+          </nav>
         </header>
 
-        <div className="flex flex-1 flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-12">
-          <div className="flex flex-1 flex-col">
-            <section className="grid gap-6 sm:grid-cols-2 md:gap-x-10 md:gap-y-8">
-              <DisplaySection
-                label="WHAT"
-                text={currentValues.what}
-                color={ACCENT_COLORS[0]}
-                locked={Boolean(locks.what)}
-                onClick={() => toggleLock("what", currentValues.what)}
-              />
-              <DisplaySection
-                label="WHY"
-                text={currentValues.why}
-                color={ACCENT_COLORS[1]}
-                locked={Boolean(locks.why)}
-                onClick={() => toggleLock("why", currentValues.why)}
-              />
-              <DisplaySection
-                label="WHO"
-                text={currentValues.who}
-                color={ACCENT_COLORS[2]}
-                locked={Boolean(locks.who)}
-                onClick={() => toggleLock("who", currentValues.who)}
-              />
-              <DisplaySection
-                label="HOW"
-                text={currentValues.how}
-                color={ACCENT_COLORS[3]}
-                locked={Boolean(locks.how)}
-                onClick={() => toggleLock("how", currentValues.how)}
-              />
-            </section>
+        <section className="grid flex-1 items-center gap-10 py-14 lg:grid-cols-[minmax(0,1fr)_18rem] lg:py-12">
+          <div className="max-w-[58rem]">
+            <p className="mb-5 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[rgba(255,250,240,0.62)]">
+              Live statement
+            </p>
+            <StatementParagraph
+              what={currentValues.what}
+              why={currentValues.why}
+              who={currentValues.who}
+              how={currentValues.how}
+              locks={locks}
+              accent={activeAccent}
+              onToggleLock={toggleLock}
+            />
 
-            <div className="mt-8 h-px w-full border-t border-[#d7d5cf] md:mt-10" />
-
-            <section className="mt-6 max-w-[36rem] md:mt-8">
-              <StatementParagraph
-                what={currentValues.what}
-                why={currentValues.why}
-                who={currentValues.who}
-                how={currentValues.how}
-              />
-            </section>
-
-            <div className="mt-8 lg:hidden">
-              <MenuNoteCard
-                activeMenuSection={activeMenuSection}
-                activeMenuContent={activeMenuContent}
-                setActiveMenuSection={setActiveMenuSection}
-              />
+            <div className="mt-9 flex max-w-[42rem] flex-wrap gap-x-5 gap-y-3 border-t border-[rgba(255,250,240,0.18)] pt-5">
+              {FIELD_NOTES.map((note) => (
+                <span
+                  key={note}
+                  className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[rgba(255,250,240,0.66)]"
+                >
+                  {note}
+                </span>
+              ))}
             </div>
           </div>
 
-          <div className="hidden lg:block" aria-hidden />
-        </div>
-
-        {isDesktopNote ? (
-          <div
-            ref={stickyNoteRef}
-            className="fixed z-20 hidden w-[17rem] select-none lg:block"
-            style={{
-              left: stickyNotePosition.x,
-              top: stickyNotePosition.y,
-              transform: `perspective(1400px) rotateX(${stickyNoteSurface.rotateX}deg) rotateY(${stickyNoteSurface.rotateY}deg) rotateZ(${stickyNoteSurface.rotateZ}deg) scale(${stickyNoteSurface.scale})`,
-              transformStyle: "preserve-3d",
-              filter: isDraggingNote ? "saturate(1.03)" : "none",
-            }}
-            onPointerEnter={(event) =>
-              updateStickyNoteSurface(event.clientX, event.clientY, isDraggingNote)
-            }
-            onPointerMove={(event) => {
-              if (isDraggingNote) return;
-              updateStickyNoteSurface(event.clientX, event.clientY, false);
-            }}
-            onPointerLeave={() => {
-              if (isDraggingNote) return;
-              resetStickyNoteSurface();
-            }}
-          >
+          <div className="lg:hidden">
             <MenuNoteCard
               activeMenuSection={activeMenuSection}
               activeMenuContent={activeMenuContent}
               setActiveMenuSection={setActiveMenuSection}
-              onDragHandlePointerDown={startStickyNoteDrag}
-              shadowStyle={{
-                boxShadow: `${stickyNoteSurface.shadowX}px ${stickyNoteSurface.shadowY}px ${stickyNoteSurface.shadowBlur}px rgba(73, 60, 18, 0.18), 0 12px 20px rgba(73, 60, 18, 0.08)`,
-              }}
             />
           </div>
-        ) : null}
-
-        <footer className="mt-auto pt-6 md:pt-8" />
+        </section>
       </div>
+
+      {isDesktopNote ? (
+        <div
+          ref={stickyNoteRef}
+          className="fixed z-20 hidden w-[18rem] select-none lg:block"
+          style={{
+            left: stickyNotePosition.x,
+            top: stickyNotePosition.y,
+            transform: `perspective(1400px) rotateX(${stickyNoteSurface.rotateX}deg) rotateY(${stickyNoteSurface.rotateY}deg) rotateZ(${stickyNoteSurface.rotateZ}deg) scale(${stickyNoteSurface.scale})`,
+            transformStyle: "preserve-3d",
+            filter: isDraggingNote ? "saturate(1.04)" : "none",
+          }}
+          onPointerEnter={(event) =>
+            updateStickyNoteSurface(event.clientX, event.clientY, isDraggingNote)
+          }
+          onPointerMove={(event) => {
+            if (isDraggingNote) return;
+            updateStickyNoteSurface(event.clientX, event.clientY, false);
+          }}
+          onPointerLeave={() => {
+            if (isDraggingNote) return;
+            resetStickyNoteSurface();
+          }}
+        >
+          <MenuNoteCard
+            activeMenuSection={activeMenuSection}
+            activeMenuContent={activeMenuContent}
+            setActiveMenuSection={setActiveMenuSection}
+            onDragHandlePointerDown={startStickyNoteDrag}
+            shadowStyle={{
+              boxShadow: `${stickyNoteSurface.shadowX}px ${stickyNoteSurface.shadowY}px ${stickyNoteSurface.shadowBlur}px rgba(73, 60, 18, 0.24), 0 14px 24px rgba(20, 16, 10, 0.16)`,
+            }}
+          />
+        </div>
+      ) : null}
     </main>
   );
 }
 
 interface MenuNoteCardProps {
   activeMenuSection: MenuSectionKey;
-  activeMenuContent: {
-    key: MenuSectionKey;
-    label: string;
-    eyebrow: string;
-    body: string;
-  };
+  activeMenuContent: MenuSectionContent;
   setActiveMenuSection: (value: MenuSectionKey) => void;
   onDragHandlePointerDown?: (event: ReactPointerEvent<HTMLDivElement>) => void;
   shadowStyle?: CSSProperties;
@@ -856,23 +703,25 @@ function MenuNoteCard({
 }: MenuNoteCardProps) {
   return (
     <div
-      className="border border-[#d8d1b6] bg-[#fff0a8]/92 p-4 backdrop-blur-sm"
+      data-testid="sticky-note"
+      className="relative border border-[rgba(124,104,40,0.16)] bg-[rgba(252,229,145,0.96)] p-4 text-[#2d271d] backdrop-blur-sm md:p-5"
       style={{
-        boxShadow: "0 14px 28px rgba(73, 60, 18, 0.12)",
+        boxShadow: "0 16px 30px rgba(20, 16, 10, 0.18)",
         ...shadowStyle,
       }}
     >
+      <span className="absolute left-1/2 top-3 h-5 w-24 -translate-x-1/2 rounded-[3px] bg-[rgba(247,236,192,0.78)] shadow-[0_1px_2px_rgba(112,96,44,0.08)]" />
       <div
-        className={`mb-3 flex items-center justify-between ${
+        className={`mb-4 flex items-center justify-between pt-4 ${
           onDragHandlePointerDown ? "cursor-grab touch-none active:cursor-grabbing" : ""
         }`}
         onPointerDown={onDragHandlePointerDown}
       >
-        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-[#6d6547]">
-          Menu
+        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#675c35]">
+          Studio note
         </p>
-        <span className="relative h-5 w-5 rounded-full bg-[#f1df83] shadow-[inset_0_1px_1px_rgba(255,255,255,0.65)]">
-          <span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#927f2b]" />
+        <span className="text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-[#8f8256]">
+          {activeMenuContent.label}
         </span>
       </div>
 
@@ -888,21 +737,21 @@ function MenuNoteCard({
               className="flex w-full items-center justify-between border border-transparent px-2 py-2 text-left transition-colors duration-150 hover:bg-white/45"
               style={{
                 backgroundColor: isActive ? "rgba(255, 255, 255, 0.54)" : "transparent",
-                borderColor: isActive ? "rgba(109, 101, 71, 0.24)" : "transparent",
+                borderColor: isActive ? "rgba(103, 92, 53, 0.16)" : "transparent",
               }}
             >
-              <span className="text-[0.9rem] text-[#353126]">{section.label}</span>
-              <span className="text-[0.68rem] text-[#8c8468]">{isActive ? "open" : ""}</span>
+              <span className="text-[0.9rem] text-[#2f2a20]">{section.label}</span>
+              <span className="text-[0.68rem] text-[#877b55]">{isActive ? "open" : ""}</span>
             </button>
           );
         })}
       </div>
 
-      <div className="mt-5 border-t border-[#d8d1b6] pt-4">
-        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#8c8468]">
+      <div className="mt-5 border-t border-[rgba(124,104,40,0.16)] pt-4">
+        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#877b55]">
           {activeMenuContent.eyebrow}
         </p>
-        <p className="mt-3 text-[0.83rem] leading-[1.6] text-[#403a2c]">
+        <p className="mt-3 text-[0.84rem] leading-[1.62] text-[#3d3729]">
           {activeMenuContent.body}
         </p>
       </div>
@@ -910,77 +759,21 @@ function MenuNoteCard({
   );
 }
 
-interface DisplaySectionProps {
-  label: string;
-  text: string;
-  color: string;
-  locked?: boolean;
-  onClick?: () => void;
-}
-
-function DisplaySection({
-  label,
-  text,
-  color,
-  locked = false,
-  onClick,
-}: DisplaySectionProps) {
-  const [visible, setVisible] = useState(true);
-  const [displayText, setDisplayText] = useState(text);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (displayText === text) return;
-    if (timerRef.current) clearTimeout(timerRef.current);
-
-    setVisible(false);
-    timerRef.current = setTimeout(() => {
-      setDisplayText(text);
-      setVisible(true);
-    }, 180);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [text, displayText]);
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={locked}
-      className="group flex flex-col items-start gap-3 text-left"
-    >
-      <span
-        className="rounded-sm px-2 py-[3px] text-[0.62rem] font-semibold uppercase tracking-[0.22em] transition-colors duration-150"
-        style={{
-          backgroundColor: locked ? "rgba(188, 188, 188, 0.72)" : color,
-          color: locked ? "#5f5a54" : "#111",
-        }}
-      >
-        {label}
-      </span>
-      <h2
-        className="max-w-[18ch] text-[1.1rem] font-medium leading-[1.08] tracking-tight text-[#111] transition-[opacity,color] duration-200 group-hover:text-[#6f6a63] sm:text-[1.3rem] md:text-[1.7rem] lg:text-[2rem]"
-        style={{
-          opacity: visible ? 1 : 0,
-          color: locked ? "#7d7872" : "#111111",
-        }}
-      >
-        {displayText}
-      </h2>
-      <span className="text-[0.58rem] uppercase tracking-[0.18em] text-[#b4aea4] opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-        {locked ? "click to unlock" : "click to lock"}
-      </span>
-    </button>
-  );
-}
-
 interface TypedSlotProps {
   text: string;
+  accent: string;
+  locked?: boolean;
+  category: VariableKey;
+  onToggleLock: (category: VariableKey, value: string) => void;
 }
 
-function TypedSlot({ text }: TypedSlotProps) {
+function TypedSlot({
+  text,
+  accent,
+  locked = false,
+  category,
+  onToggleLock,
+}: TypedSlotProps) {
   const [displayText, setDisplayText] = useState(text);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const frameRef = useRef(0);
@@ -1013,7 +806,7 @@ function TypedSlot({ text }: TypedSlotProps) {
       if (deletingText.length > prefixLength) {
         deletingText = deletingText.slice(0, -1);
         setDisplayText(deletingText);
-        timerRef.current = setTimeout(deleteStep, 12);
+        timerRef.current = setTimeout(deleteStep, 6);
         return;
       }
 
@@ -1024,14 +817,14 @@ function TypedSlot({ text }: TypedSlotProps) {
         if (typedLength < text.length) {
           typedLength += 1;
           setDisplayText(text.slice(0, typedLength));
-          timerRef.current = setTimeout(typeStep, 14);
+          timerRef.current = setTimeout(typeStep, 7);
         }
       };
 
-      timerRef.current = setTimeout(typeStep, 40);
+      timerRef.current = setTimeout(typeStep, 18);
     };
 
-    timerRef.current = setTimeout(deleteStep, 20);
+    timerRef.current = setTimeout(deleteStep, 10);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -1039,10 +832,24 @@ function TypedSlot({ text }: TypedSlotProps) {
   }, [text]);
 
   return (
-    <span className="text-[#3f3b36]">
+    <button
+      type="button"
+      onClick={() => onToggleLock(category, text)}
+      aria-pressed={locked}
+      className="inline align-baseline font-bold transition-colors duration-150"
+      style={{
+        color: locked ? "#fffaf0" : accent,
+        backgroundColor: "transparent",
+        textShadow: "0 1px 18px rgba(0, 0, 0, 0.24)",
+        textAlign: "inherit",
+      }}
+    >
       {displayText}
-      <span className="ml-[1px] inline-block h-[0.95em] w-px translate-y-[2px] bg-[#8a8780] align-baseline animate-pulse" />
-    </span>
+      <span
+        className="ml-[1px] inline-block h-[0.82em] w-px translate-y-[2px] align-baseline animate-pulse"
+        style={{ backgroundColor: locked ? "#fffaf0" : accent }}
+      />
+    </button>
   );
 }
 
@@ -1051,6 +858,9 @@ interface StatementParagraphProps {
   why: string;
   who: string;
   how: string;
+  locks: LockState;
+  accent: string;
+  onToggleLock: (category: VariableKey, value: string) => void;
 }
 
 function StatementParagraph({
@@ -1058,12 +868,48 @@ function StatementParagraph({
   why,
   who,
   how,
+  locks,
+  accent,
+  onToggleLock,
 }: StatementParagraphProps) {
   return (
-    <p className="text-[0.82rem] leading-[1.58] text-[#4a4a4a] font-light md:text-[0.9rem] md:leading-[1.66]">
-      We at Alchemy Unlimited are a collection of creative alchemists who are interested in{" "}
-      <TypedSlot text={what} />. We are committed to <TypedSlot text={why} /> for{" "}
-      <TypedSlot text={who} />. We approach our work through <TypedSlot text={how} />.
-    </p>
+    <h1
+      data-testid="statement"
+      className="max-w-[30ch] text-[1.7rem] font-semibold leading-[1.14] text-[#fffaf0] sm:text-[2.25rem] md:text-[2.85rem] lg:text-[3.25rem]"
+    >
+      We at Alchemy Unlimited are a collection of creative alchemists interested in{" "}
+      <TypedSlot
+        text={what}
+        accent={accent}
+        category="what"
+        locked={Boolean(locks.what)}
+        onToggleLock={onToggleLock}
+      />
+      , committed to{" "}
+      <TypedSlot
+        text={why}
+        accent={accent}
+        category="why"
+        locked={Boolean(locks.why)}
+        onToggleLock={onToggleLock}
+      />{" "}
+      for{" "}
+      <TypedSlot
+        text={who}
+        accent={accent}
+        category="who"
+        locked={Boolean(locks.who)}
+        onToggleLock={onToggleLock}
+      />
+      , and working through{" "}
+      <TypedSlot
+        text={how}
+        accent={accent}
+        category="how"
+        locked={Boolean(locks.how)}
+        onToggleLock={onToggleLock}
+      />
+      .
+    </h1>
   );
 }

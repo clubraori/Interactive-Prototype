@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter @workspace/manifesto run build",
-  "outputDirectory": "artifacts/manifesto/dist/public"
+  "buildCommand": "pnpm --filter @workspace/alchemy-unlimited run build",
+  "outputDirectory": "artifacts/alchemy-unlimited/dist/public"
 }
