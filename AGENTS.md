@@ -6,6 +6,7 @@ This repository contains onboarding instructions for collaborators and for Codex
 
 Before doing any setup or code changes, read these files:
 
+- `NICK_START_HERE.md`
 - `README_FOR_NICK.md`
 - `docs/NICK_SETUP.md`
 
@@ -69,6 +70,22 @@ git add .
 git commit -m "Describe the change"
 git push origin master
 ```
+
+## Planning Doc Guardrail
+
+Before pushing any change to `master`, create and commit a new planning doc:
+
+```bash
+pnpm run planning:new
+```
+
+The repo's pre-push hook blocks pushes to `master` and `main` unless the push includes a newly added file matching:
+
+```text
+docs/PlanningDocDDMonYYYY_SiteVersionX.Y.md
+```
+
+Commit the planning doc together with the site change it describes.
 
 ## Important
 

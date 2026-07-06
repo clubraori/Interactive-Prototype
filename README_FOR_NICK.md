@@ -2,6 +2,8 @@
 
 This file is meant to be shared directly with Nick.
 
+Short version: ask Codex to read `NICK_START_HERE.md`.
+
 If you are Nick, the goal is simple:
 
 - get the repo onto your machine
