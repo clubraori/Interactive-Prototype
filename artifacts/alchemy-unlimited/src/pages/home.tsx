@@ -6,22 +6,21 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { Link } from "wouter";
 
-type VariableKey = "what" | "why" | "who" | "how";
-type MenuSectionKey = "about" | "lenses" | "community" | "contact";
+type VariableKey = "whatHow" | "who" | "why";
+type MenuSectionKey = "about" | "lenses" | "works" | "contact";
 
 interface VariableState {
-  what: number;
-  why: number;
+  whatHow: number;
   who: number;
-  how: number;
+  why: number;
 }
 
 interface LockState {
-  what: string | null;
-  why: string | null;
+  whatHow: string | null;
   who: string | null;
-  how: string | null;
+  why: string | null;
 }
 
 interface NotePosition {
@@ -47,31 +46,17 @@ interface MenuSectionContent {
 }
 
 const VALUE_BANKS: Record<VariableKey, string[]> = {
-  what: [
+  whatHow: [
+    "participatory cultural strategy",
+    "creative producing frameworks",
+    "public-facing narrative systems",
+    "curatorial facilitation",
+    "workshops and situated activations",
+    "emerging technology translation",
     "interdisciplinary creative practice",
-    "creative consulting",
-    "community engagement",
-    "curatorial practice",
-    "creative community building",
-    "strategies for accessing creativity",
-    "thought leadership",
-    "creative producing",
-    "public-facing creative systems",
-    "field-tested cultural strategy",
-    "participatory formats",
-  ],
-  why: [
-    "more equitable access to creative capital",
-    "meaningful action through creative strategies",
-    "re-engagement with our surroundings",
-    "public connection across art, science, and culture",
-    "deeper audience engagement",
-    "sustainable and ethical practice",
-    "expanding boundaries of creative practice",
-    "better organization of brainpower and creative energy",
-    "organic community building",
-    "more legible ways of seeing",
-    "shared momentum before launch",
+    "field-tested cultural programs",
+    "collective design processes",
+    "public engagement formats",
   ],
   who: [
     "creative communities",
@@ -86,22 +71,20 @@ const VALUE_BANKS: Record<VariableKey, string[]> = {
     "artists and creatives",
     "early collaborators and alumni",
   ],
-  how: [
-    "co-design",
-    "creative consultation",
-    "hands-on interactive processes",
-    "workshops, installations and situated activations",
-    "facilitation",
-    "a creative producing framework",
-    "empathy and care",
-    "interdisciplinary thinking",
-    "process-oriented collaboration",
-    "outside perspective",
-    "preview circles and field notes",
+  why: [
+    "deeper audience engagement",
+    "public cultural connection",
+    "equitable creative access",
+    "shared creative momentum",
+    "legible emerging worlds",
+    "stronger collective imagination",
+    "clearer cultural participation",
+    "more generous public programs",
+    "trusted creative collaboration",
   ],
 };
 
-const CATEGORY_ORDER: VariableKey[] = ["what", "why", "who", "how"];
+const CATEGORY_ORDER: VariableKey[] = ["whatHow", "who", "why"];
 const ACCENT_COLORS = ["#ff8a47", "#55d6c2", "#9f94ff", "#ffd35a"];
 const X_STEP_PX = 190;
 const Y_STEP_PX = 150;
@@ -136,11 +119,11 @@ const MENU_SECTIONS: MenuSectionContent[] = [
       "The page behaves like the practice: a field of lenses, filters, and layered readings that turn one set of material into many possible forms.",
   },
   {
-    key: "community",
-    label: "Community",
-    eyebrow: "Early circle",
+    key: "works",
+    label: "Works",
+    eyebrow: "Lightweight portfolio",
     body:
-      "The next layer is a small internal list for alumni, peers, and early collaborators: previews, toolkit prototypes, and work-in-progress thinking.",
+      "A proof layer for projects where the work begins to read as Alchemy: polished, verifiable, and open enough for lightweight case-study treatment.",
   },
   {
     key: "contact",
@@ -149,12 +132,6 @@ const MENU_SECTIONS: MenuSectionContent[] = [
     body:
       "Regular third-party conversations help test whether Alchemy is legible beyond the collaboration and reveal what the work is asking to become.",
   },
-];
-
-const FIELD_NOTES = [
-  "Multiple lenses",
-  "Shared creative capital",
-  "Playfulness as a valid day-one signal",
 ];
 
 function lerp(a: number, b: number, t: number): number {
@@ -180,26 +157,23 @@ export default function Home() {
     offsetY: 0,
   });
   const previousValuesRef = useRef<VariableState>({
-    what: 0,
-    why: 4,
+    whatHow: 0,
     who: 1,
-    how: 0,
+    why: 4,
   });
   const lastBucketRef = useRef({ x: -1, y: -1 });
   const lastChangeAtRef = useRef(0);
   const viewportRef = useRef({ width: 1440, height: 900 });
 
   const [indices, setIndices] = useState<VariableState>({
-    what: 0,
-    why: 4,
+    whatHow: 0,
     who: 1,
-    how: 0,
+    why: 4,
   });
   const [locks, setLocks] = useState<LockState>({
-    what: null,
-    why: null,
+    whatHow: null,
     who: null,
-    how: null,
+    why: null,
   });
   const [accentIndex, setAccentIndex] = useState(0);
   const [pulseKey, setPulseKey] = useState(0);
@@ -289,10 +263,9 @@ export default function Home() {
     lastChangeAtRef.current = now;
 
     const next = {
-      what: positiveMod(bucketX + bucketY, VALUE_BANKS.what.length),
-      why: positiveMod(bucketX * 2 + bucketY * 3, VALUE_BANKS.why.length),
+      whatHow: positiveMod(bucketX + bucketY, VALUE_BANKS.whatHow.length),
       who: positiveMod(bucketX * 3 + bucketY, VALUE_BANKS.who.length),
-      how: positiveMod(bucketX + bucketY * 2, VALUE_BANKS.how.length),
+      why: positiveMod(bucketX * 2 + bucketY * 3, VALUE_BANKS.why.length),
     };
     const previous = previousValuesRef.current;
     const changed = CATEGORY_ORDER.some((category) => next[category] !== previous[category]);
@@ -444,10 +417,9 @@ export default function Home() {
   const activeMenuContent =
     MENU_SECTIONS.find((section) => section.key === activeMenuSection) ?? MENU_SECTIONS[0];
   const currentValues = {
-    what: locks.what ?? VALUE_BANKS.what[indices.what],
-    why: locks.why ?? VALUE_BANKS.why[indices.why],
+    whatHow: locks.whatHow ?? VALUE_BANKS.whatHow[indices.whatHow],
     who: locks.who ?? VALUE_BANKS.who[indices.who],
-    how: locks.how ?? VALUE_BANKS.how[indices.how],
+    why: locks.why ?? VALUE_BANKS.why[indices.why],
   };
 
   const toggleLock = (category: VariableKey, value: string) => {
@@ -585,9 +557,9 @@ export default function Home() {
         <header className="flex items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <span className="h-3 w-3 bg-[#ff6737]" />
-            <span className="text-[0.92rem] font-semibold text-[#fffaf0]">
+            <Link href="/" className="text-[0.92rem] font-semibold text-[#fffaf0]">
               Alchemy Unlimited
-            </span>
+            </Link>
           </div>
 
           <nav className="hidden items-center gap-5 md:flex">
@@ -595,17 +567,18 @@ export default function Home() {
               const isActive = section.key === activeMenuSection;
 
               return (
-                <button
+                <Link
                   key={section.key}
-                  type="button"
-                  onClick={() => setActiveMenuSection(section.key)}
+                  href={`/${section.key}`}
+                  onMouseEnter={() => setActiveMenuSection(section.key)}
+                  onFocus={() => setActiveMenuSection(section.key)}
                   className="text-[0.78rem] font-semibold uppercase tracking-[0.14em] transition-colors duration-150"
                   style={{
                     color: isActive ? "#fffaf0" : "rgba(255,250,240,0.58)",
                   }}
                 >
                   {section.label}
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -617,25 +590,13 @@ export default function Home() {
               Live statement
             </p>
             <StatementParagraph
-              what={currentValues.what}
-              why={currentValues.why}
+              whatHow={currentValues.whatHow}
               who={currentValues.who}
-              how={currentValues.how}
+              why={currentValues.why}
               locks={locks}
               accent={activeAccent}
               onToggleLock={toggleLock}
             />
-
-            <div className="mt-9 flex max-w-[42rem] flex-wrap gap-x-5 gap-y-3 border-t border-[rgba(255,250,240,0.18)] pt-5">
-              {FIELD_NOTES.map((note) => (
-                <span
-                  key={note}
-                  className="text-[0.72rem] font-medium uppercase tracking-[0.16em] text-[rgba(255,250,240,0.66)]"
-                >
-                  {note}
-                </span>
-              ))}
-            </div>
           </div>
 
           <div className="lg:hidden">
@@ -730,10 +691,11 @@ function MenuNoteCard({
           const isActive = section.key === activeMenuSection;
 
           return (
-            <button
+            <Link
               key={section.key}
-              type="button"
-              onClick={() => setActiveMenuSection(section.key)}
+              href={`/${section.key}`}
+              onMouseEnter={() => setActiveMenuSection(section.key)}
+              onFocus={() => setActiveMenuSection(section.key)}
               className="flex w-full items-center justify-between border border-transparent px-2 py-2 text-left transition-colors duration-150 hover:bg-white/45"
               style={{
                 backgroundColor: isActive ? "rgba(255, 255, 255, 0.54)" : "transparent",
@@ -742,7 +704,7 @@ function MenuNoteCard({
             >
               <span className="text-[0.9rem] text-[#2f2a20]">{section.label}</span>
               <span className="text-[0.68rem] text-[#877b55]">{isActive ? "open" : ""}</span>
-            </button>
+            </Link>
           );
         })}
       </div>
@@ -854,20 +816,18 @@ function TypedSlot({
 }
 
 interface StatementParagraphProps {
-  what: string;
-  why: string;
+  whatHow: string;
   who: string;
-  how: string;
+  why: string;
   locks: LockState;
   accent: string;
   onToggleLock: (category: VariableKey, value: string) => void;
 }
 
 function StatementParagraph({
-  what,
-  why,
+  whatHow,
   who,
-  how,
+  why,
   locks,
   accent,
   onToggleLock,
@@ -877,22 +837,14 @@ function StatementParagraph({
       data-testid="statement"
       className="max-w-[30ch] text-[1.7rem] font-semibold leading-[1.14] text-[#fffaf0] sm:text-[2.25rem] md:text-[2.85rem] lg:text-[3.25rem]"
     >
-      We at Alchemy Unlimited are a collection of creative alchemists interested in{" "}
+      An assembly of creative producers specializing in{" "}
       <TypedSlot
-        text={what}
+        text={whatHow}
         accent={accent}
-        category="what"
-        locked={Boolean(locks.what)}
+        category="whatHow"
+        locked={Boolean(locks.whatHow)}
         onToggleLock={onToggleLock}
       />
-      , committed to{" "}
-      <TypedSlot
-        text={why}
-        accent={accent}
-        category="why"
-        locked={Boolean(locks.why)}
-        onToggleLock={onToggleLock}
-      />{" "}
       for{" "}
       <TypedSlot
         text={who}
@@ -901,12 +853,12 @@ function StatementParagraph({
         locked={Boolean(locks.who)}
         onToggleLock={onToggleLock}
       />
-      , and working through{" "}
+      , working toward{" "}
       <TypedSlot
-        text={how}
+        text={why}
         accent={accent}
-        category="how"
-        locked={Boolean(locks.how)}
+        category="why"
+        locked={Boolean(locks.why)}
         onToggleLock={onToggleLock}
       />
       .
