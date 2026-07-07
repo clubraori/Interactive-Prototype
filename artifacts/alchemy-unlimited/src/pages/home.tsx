@@ -848,7 +848,7 @@ function StatementParagraph({
       <span aria-hidden="true" className="inline-block w-[2.4ch] opacity-0">
         for
       </span>
-      <span className="pointer-events-none absolute left-1/2 top-[3.42em] z-[1] -translate-x-1/2 whitespace-nowrap text-[#fffaf0]">
+      <span className="pointer-events-none absolute left-1/2 top-[3.42em] z-[3] -translate-x-1/2 whitespace-nowrap bg-[rgba(16,22,28,0.72)] px-[0.18em] text-[#fffaf0] shadow-[0_0_18px_rgba(16,22,28,0.5)]">
         for
       </span>{" "}
       <TypedSlot
@@ -862,7 +862,7 @@ function StatementParagraph({
       <span aria-hidden="true" className="inline-block w-[12.7ch] opacity-0">
         working toward
       </span>
-      <span className="pointer-events-none absolute left-1/2 top-[4.56em] z-[1] -translate-x-1/2 whitespace-nowrap text-[#fffaf0]">
+      <span className="pointer-events-none absolute left-1/2 top-[4.56em] z-[3] -translate-x-1/2 whitespace-nowrap bg-[rgba(16,22,28,0.72)] px-[0.2em] text-[#fffaf0] shadow-[0_0_18px_rgba(16,22,28,0.5)]">
         working toward
       </span>
       <br />
