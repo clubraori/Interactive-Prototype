@@ -835,7 +835,7 @@ function StatementParagraph({
   return (
     <h1
       data-testid="statement"
-      className="max-w-[30ch] text-[1.7rem] font-semibold leading-[1.14] text-[#fffaf0] sm:text-[2.25rem] md:text-[2.85rem] lg:text-[3.25rem]"
+      className="relative max-w-[30ch] text-[1.7rem] font-semibold leading-[1.14] text-[#fffaf0] sm:text-[2.25rem] md:text-[2.85rem] lg:text-[3.25rem]"
     >
       An assembly of creative producers specializing in{" "}
       <TypedSlot
@@ -845,7 +845,12 @@ function StatementParagraph({
         locked={Boolean(locks.whatHow)}
         onToggleLock={onToggleLock}
       />{" "}
-      <span className="inline-block w-[2.4ch] text-center text-[#fffaf0]">for</span>{" "}
+      <span aria-hidden="true" className="inline-block w-[2.4ch] opacity-0">
+        for
+      </span>
+      <span className="pointer-events-none absolute left-1/2 top-[3.42em] z-[1] -translate-x-1/2 whitespace-nowrap text-[#fffaf0]">
+        for
+      </span>{" "}
       <TypedSlot
         text={who}
         accent={accent}
@@ -853,7 +858,13 @@ function StatementParagraph({
         locked={Boolean(locks.who)}
         onToggleLock={onToggleLock}
       />
-      {", working toward"}
+      {", "}
+      <span aria-hidden="true" className="inline-block w-[12.7ch] opacity-0">
+        working toward
+      </span>
+      <span className="pointer-events-none absolute left-1/2 top-[4.56em] z-[1] -translate-x-1/2 whitespace-nowrap text-[#fffaf0]">
+        working toward
+      </span>
       <br />
       <TypedSlot
         text={why}
