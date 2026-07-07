@@ -835,45 +835,42 @@ function StatementParagraph({
   return (
     <h1
       data-testid="statement"
-      className="relative max-w-[30ch] text-[1.7rem] font-semibold leading-[1.14] text-[#fffaf0] sm:text-[2.25rem] md:text-[2.85rem] lg:text-[3.25rem]"
+      className="max-w-[30ch] text-[1.7rem] font-semibold leading-[1.14] text-[#fffaf0] sm:text-[2.25rem] md:text-[2.85rem] lg:text-[3.25rem]"
     >
-      An assembly of creative producers specializing in{" "}
-      <TypedSlot
-        text={whatHow}
-        accent={accent}
-        category="whatHow"
-        locked={Boolean(locks.whatHow)}
-        onToggleLock={onToggleLock}
-      />{" "}
-      <span aria-hidden="true" className="inline-block w-[2.4ch] opacity-0">
-        for
+      <span className="block">An assembly of creative producers specializing in</span>
+      <span className="mt-1 grid grid-cols-[minmax(0,1fr)_2.4ch_minmax(0,1fr)] items-start gap-x-3 sm:gap-x-4">
+        <span className="min-w-0 text-right">
+          <TypedSlot
+            text={whatHow}
+            accent={accent}
+            category="whatHow"
+            locked={Boolean(locks.whatHow)}
+            onToggleLock={onToggleLock}
+          />
+        </span>
+        <span className="text-center text-[#fffaf0]">for</span>
+        <span className="min-w-0 text-left">
+          <TypedSlot
+            text={who}
+            accent={accent}
+            category="who"
+            locked={Boolean(locks.who)}
+            onToggleLock={onToggleLock}
+          />
+          {","}
+        </span>
       </span>
-      <span className="pointer-events-none absolute left-1/2 top-[3.42em] z-[3] -translate-x-1/2 whitespace-nowrap bg-[rgba(16,22,28,0.72)] px-[0.18em] text-[#fffaf0] shadow-[0_0_18px_rgba(16,22,28,0.5)]">
-        for
-      </span>{" "}
-      <TypedSlot
-        text={who}
-        accent={accent}
-        category="who"
-        locked={Boolean(locks.who)}
-        onToggleLock={onToggleLock}
-      />
-      {", "}
-      <span aria-hidden="true" className="inline-block w-[12.7ch] opacity-0">
-        working toward
+      <span className="mt-1 block">working toward</span>
+      <span className="block">
+        <TypedSlot
+          text={why}
+          accent={accent}
+          category="why"
+          locked={Boolean(locks.why)}
+          onToggleLock={onToggleLock}
+        />
+        {"."}
       </span>
-      <span className="pointer-events-none absolute left-1/2 top-[4.56em] z-[3] -translate-x-1/2 whitespace-nowrap bg-[rgba(16,22,28,0.72)] px-[0.2em] text-[#fffaf0] shadow-[0_0_18px_rgba(16,22,28,0.5)]">
-        working toward
-      </span>
-      <br />
-      <TypedSlot
-        text={why}
-        accent={accent}
-        category="why"
-        locked={Boolean(locks.why)}
-        onToggleLock={onToggleLock}
-      />
-      {"."}
     </h1>
   );
 }
