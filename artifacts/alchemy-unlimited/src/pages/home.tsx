@@ -835,42 +835,34 @@ function StatementParagraph({
   return (
     <h1
       data-testid="statement"
-      className="max-w-[34ch] text-[1.7rem] font-semibold leading-[1.14] text-[#fffaf0] sm:text-[2.25rem] md:text-[2.85rem] lg:text-[3.25rem]"
+      className="max-w-[30ch] text-[1.7rem] font-semibold leading-[1.14] text-[#fffaf0] sm:text-[2.25rem] md:text-[2.85rem] lg:text-[3.25rem]"
     >
-      <span className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-x-3 gap-y-2 sm:gap-x-4">
-        <span className="min-w-0 text-right">
-          An assembly of creative producers specializing in{" "}
-          <TypedSlot
-            text={whatHow}
-            accent={accent}
-            category="whatHow"
-            locked={Boolean(locks.whatHow)}
-            onToggleLock={onToggleLock}
-          />
-        </span>
-        <span className="px-1 text-center text-[#fffaf0]">for</span>
-        <span className="min-w-0 text-left">
-          <TypedSlot
-            text={who}
-            accent={accent}
-            category="who"
-            locked={Boolean(locks.who)}
-            onToggleLock={onToggleLock}
-          />
-          ,
-        </span>
-      </span>
-      <span className="mt-5 block text-center sm:mt-6">working toward</span>
-      <span className="mt-5 block text-center sm:mt-6">
-        <TypedSlot
-          text={why}
-          accent={accent}
-          category="why"
-          locked={Boolean(locks.why)}
-          onToggleLock={onToggleLock}
-        />
-        .
-      </span>
+      An assembly of creative producers specializing in{" "}
+      <TypedSlot
+        text={whatHow}
+        accent={accent}
+        category="whatHow"
+        locked={Boolean(locks.whatHow)}
+        onToggleLock={onToggleLock}
+      />{" "}
+      <span className="inline-block w-[2.4ch] text-center text-[#fffaf0]">for</span>{" "}
+      <TypedSlot
+        text={who}
+        accent={accent}
+        category="who"
+        locked={Boolean(locks.who)}
+        onToggleLock={onToggleLock}
+      />
+      {", working toward"}
+      <br />
+      <TypedSlot
+        text={why}
+        accent={accent}
+        category="why"
+        locked={Boolean(locks.why)}
+        onToggleLock={onToggleLock}
+      />
+      {"."}
     </h1>
   );
 }
