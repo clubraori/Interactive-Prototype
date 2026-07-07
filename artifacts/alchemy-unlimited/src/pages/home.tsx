@@ -5,6 +5,8 @@ import {
   useState,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
+  type RefObject,
+  type ReactNode,
 } from "react";
 import { Link } from "wouter";
 
@@ -92,9 +94,12 @@ const CHANGE_COOLDOWN_MS = 1800;
 const DESKTOP_NOTE_BREAKPOINT = 1024;
 const NOTE_EDGE_PADDING = 24;
 const REVEAL_VIDEO_PATH = `${import.meta.env.BASE_URL}kaleidoscope-reveal.mp4`;
-const ANCHOR_LINE_BASE_FONT_SIZE_PX = 22;
-const ANCHOR_LINE_MIN_FONT_SIZE_PX = 9.5;
-const ANCHOR_LINE_CELL_PADDING_PX = 6;
+const MISSION_BASE_FONT_SIZE_PX = 22;
+const MISSION_MIN_FONT_SIZE_PX = 10;
+const MISSION_ANCHOR_GAP_EM = 0.45;
+const MISSION_INTRO_LINE = "An assembly of creative producers specializing in";
+const MISSION_WORKING_LINE = "working toward";
+const MISSION_ANCHOR_WORD = "for";
 
 const DEFAULT_NOTE_SURFACE: NoteSurfaceState = {
   rotateX: -2,
@@ -818,44 +823,67 @@ function TypedSlot({
   );
 }
 
-function useAnchoredLineFontSize(leftText: string, rightText: string) {
-  const rowRef = useRef<HTMLSpanElement | null>(null);
+function useMissionFontSize(leftText: string, rightText: string, whyText: string) {
+  const containerRef = useRef<HTMLHeadingElement | null>(null);
+  const introMeasureRef = useRef<HTMLSpanElement | null>(null);
   const leftMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const anchorMeasureRef = useRef<HTMLSpanElement | null>(null);
   const rightMeasureRef = useRef<HTMLSpanElement | null>(null);
-  const [fontSize, setFontSize] = useState(ANCHOR_LINE_BASE_FONT_SIZE_PX);
+  const workingMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const whyMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const [fontSize, setFontSize] = useState(MISSION_BASE_FONT_SIZE_PX);
 
   useEffect(() => {
-    const row = rowRef.current;
+    const container = containerRef.current;
+    const introMeasure = introMeasureRef.current;
     const leftMeasure = leftMeasureRef.current;
+    const anchorMeasure = anchorMeasureRef.current;
     const rightMeasure = rightMeasureRef.current;
+    const workingMeasure = workingMeasureRef.current;
+    const whyMeasure = whyMeasureRef.current;
 
-    if (!row || !leftMeasure || !rightMeasure) return;
+    if (
+      !container ||
+      !introMeasure ||
+      !leftMeasure ||
+      !anchorMeasure ||
+      !rightMeasure ||
+      !workingMeasure ||
+      !whyMeasure
+    ) {
+      return;
+    }
 
     let frameId = 0;
 
     const update = () => {
-      const rowWidth = row.getBoundingClientRect().width;
-      const styles = window.getComputedStyle(row);
-      const columnGap = Number.parseFloat(styles.columnGap) || 0;
-      const columns = styles.gridTemplateColumns.split(" ");
-      const anchorColumnWidth = Number.parseFloat(columns[1] ?? "") || 34;
-      const availableCellWidth =
-        (rowWidth - anchorColumnWidth - columnGap * 2) / 2 - ANCHOR_LINE_CELL_PADDING_PX;
-      const widestPhrase = Math.max(
-        leftMeasure.getBoundingClientRect().width,
-        rightMeasure.getBoundingClientRect().width,
+      const containerWidth = container.getBoundingClientRect().width;
+      const widestFullLine = Math.max(
+        introMeasure.getBoundingClientRect().width,
+        workingMeasure.getBoundingClientRect().width,
+        whyMeasure.getBoundingClientRect().width,
         1,
       );
+      const widestAnchorSide = Math.max(
+        leftMeasure.getBoundingClientRect().width,
+        rightMeasure.getBoundingClientRect().width,
+      );
+      const anchorLineWidth =
+        widestAnchorSide * 2 +
+        anchorMeasure.getBoundingClientRect().width +
+        MISSION_ANCHOR_GAP_EM * MISSION_BASE_FONT_SIZE_PX * 2;
+      const scale = Math.min(
+        1,
+        containerWidth / widestFullLine,
+        containerWidth / Math.max(anchorLineWidth, 1),
+      );
       const nextFontSize = Math.max(
-        ANCHOR_LINE_MIN_FONT_SIZE_PX,
-        Math.min(
-          ANCHOR_LINE_BASE_FONT_SIZE_PX,
-          ANCHOR_LINE_BASE_FONT_SIZE_PX * (availableCellWidth / widestPhrase),
-        ),
+        MISSION_MIN_FONT_SIZE_PX,
+        Math.min(MISSION_BASE_FONT_SIZE_PX, MISSION_BASE_FONT_SIZE_PX * scale),
       );
 
       setFontSize((current) =>
-        Math.abs(current - nextFontSize) > 0.25 ? nextFontSize : current,
+        Math.abs(current - nextFontSize) > 0.2 ? nextFontSize : current,
       );
     };
 
@@ -868,7 +896,7 @@ function useAnchoredLineFontSize(leftText: string, rightText: string) {
 
     const observer =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleUpdate);
-    observer?.observe(row);
+    observer?.observe(container);
     window.addEventListener("resize", scheduleUpdate);
 
     return () => {
@@ -876,9 +904,36 @@ function useAnchoredLineFontSize(leftText: string, rightText: string) {
       observer?.disconnect();
       window.removeEventListener("resize", scheduleUpdate);
     };
-  }, [leftText, rightText]);
+  }, [leftText, rightText, whyText]);
 
-  return { fontSize, rowRef, leftMeasureRef, rightMeasureRef };
+  return {
+    fontSize,
+    containerRef,
+    introMeasureRef,
+    leftMeasureRef,
+    anchorMeasureRef,
+    rightMeasureRef,
+    workingMeasureRef,
+    whyMeasureRef,
+  };
+}
+
+interface MeasurementTextProps {
+  children: ReactNode;
+  measureRef: RefObject<HTMLSpanElement | null>;
+}
+
+function MeasurementText({ children, measureRef }: MeasurementTextProps) {
+  return (
+    <span
+      ref={measureRef}
+      aria-hidden="true"
+      className="pointer-events-none invisible absolute left-0 top-0 whitespace-nowrap font-bold"
+      style={{ fontSize: `${MISSION_BASE_FONT_SIZE_PX}px` }}
+    >
+      {children}
+    </span>
+  );
 }
 
 interface StatementParagraphProps {
@@ -898,40 +953,35 @@ function StatementParagraph({
   accent,
   onToggleLock,
 }: StatementParagraphProps) {
-  const { fontSize, rowRef, leftMeasureRef, rightMeasureRef } = useAnchoredLineFontSize(
-    whatHow,
-    `${who},`,
-  );
+  const {
+    fontSize,
+    containerRef,
+    introMeasureRef,
+    leftMeasureRef,
+    anchorMeasureRef,
+    rightMeasureRef,
+    workingMeasureRef,
+    whyMeasureRef,
+  } = useMissionFontSize(whatHow, `${who},`, `${why}.`);
 
   return (
     <h1
+      ref={containerRef}
       data-testid="statement"
-      className="w-full max-w-[42rem] font-semibold leading-[1.12] text-[#fffaf0]"
+      className="relative w-full max-w-[42rem] text-center font-semibold leading-[1.1] text-[#fffaf0]"
+      style={{ fontSize: `${fontSize}px` }}
     >
-      <span className="block whitespace-nowrap text-[0.92rem] sm:text-[1.18rem] md:text-[1.42rem] lg:text-[1.64rem]">
-        An assembly of creative producers specializing in
-      </span>
+      <MeasurementText measureRef={introMeasureRef}>{MISSION_INTRO_LINE}</MeasurementText>
+      <MeasurementText measureRef={leftMeasureRef}>{whatHow}</MeasurementText>
+      <MeasurementText measureRef={anchorMeasureRef}>{MISSION_ANCHOR_WORD}</MeasurementText>
+      <MeasurementText measureRef={rightMeasureRef}>{who},</MeasurementText>
+      <MeasurementText measureRef={workingMeasureRef}>{MISSION_WORKING_LINE}</MeasurementText>
+      <MeasurementText measureRef={whyMeasureRef}>{why}.</MeasurementText>
+      <span className="block whitespace-nowrap">{MISSION_INTRO_LINE}</span>
       <span
-        ref={rowRef}
-        className="relative mt-2 grid grid-cols-[minmax(0,1fr)_2.4ch_minmax(0,1fr)] items-center gap-x-2 whitespace-nowrap leading-[1.08] sm:gap-x-3"
-        style={{ fontSize: `${fontSize}px` }}
+        className="mt-[0.32em] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center whitespace-nowrap"
+        style={{ columnGap: `${MISSION_ANCHOR_GAP_EM}em` }}
       >
-        <span
-          ref={leftMeasureRef}
-          aria-hidden="true"
-          className="pointer-events-none invisible absolute left-0 top-0 whitespace-nowrap font-bold"
-          style={{ fontSize: `${ANCHOR_LINE_BASE_FONT_SIZE_PX}px` }}
-        >
-          {whatHow}
-        </span>
-        <span
-          ref={rightMeasureRef}
-          aria-hidden="true"
-          className="pointer-events-none invisible absolute left-0 top-0 whitespace-nowrap font-bold"
-          style={{ fontSize: `${ANCHOR_LINE_BASE_FONT_SIZE_PX}px` }}
-        >
-          {who},
-        </span>
         <span className="min-w-0 whitespace-nowrap text-right">
           <TypedSlot
             text={whatHow}
@@ -941,7 +991,9 @@ function StatementParagraph({
             onToggleLock={onToggleLock}
           />
         </span>
-        <span className="text-center text-[#fffaf0]">for</span>
+        <span className="whitespace-nowrap text-center text-[#fffaf0]">
+          {MISSION_ANCHOR_WORD}
+        </span>
         <span className="min-w-0 whitespace-nowrap text-left">
           <TypedSlot
             text={who}
@@ -953,10 +1005,8 @@ function StatementParagraph({
           {","}
         </span>
       </span>
-      <span className="mt-2 block whitespace-nowrap text-[0.92rem] sm:text-[1.18rem] md:text-[1.42rem] lg:text-[1.64rem]">
-        working toward
-      </span>
-      <span className="block whitespace-nowrap text-[0.92rem] sm:text-[1.18rem] md:text-[1.42rem] lg:text-[1.64rem]">
+      <span className="mt-[0.32em] block whitespace-nowrap">{MISSION_WORKING_LINE}</span>
+      <span className="block whitespace-nowrap">
         <TypedSlot
           text={why}
           accent={accent}
