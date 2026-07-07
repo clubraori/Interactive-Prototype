@@ -968,7 +968,7 @@ function StatementParagraph({
     <h1
       ref={containerRef}
       data-testid="statement"
-      className="relative w-full max-w-[42rem] text-center font-semibold leading-[1.1] text-[#fffaf0]"
+      className="relative w-full max-w-[42rem] text-left font-semibold leading-[1.1] text-[#fffaf0]"
       style={{ fontSize: `${fontSize}px` }}
     >
       <MeasurementText measureRef={introMeasureRef}>{MISSION_INTRO_LINE}</MeasurementText>
@@ -982,7 +982,7 @@ function StatementParagraph({
         className="mt-[0.32em] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center whitespace-nowrap"
         style={{ columnGap: `${MISSION_ANCHOR_GAP_EM}em` }}
       >
-        <span className="min-w-0 whitespace-nowrap text-right">
+        <span className="min-w-0 whitespace-nowrap text-left">
           <TypedSlot
             text={whatHow}
             accent={accent}
