@@ -94,9 +94,9 @@ const CHANGE_COOLDOWN_MS = 1800;
 const DESKTOP_NOTE_BREAKPOINT = 1024;
 const NOTE_EDGE_PADDING = 24;
 const REVEAL_VIDEO_PATH = `${import.meta.env.BASE_URL}kaleidoscope-reveal.mp4`;
-const MISSION_BASE_FONT_SIZE_PX = 22;
-const MISSION_MIN_FONT_SIZE_PX = 10;
-const MISSION_ANCHOR_GAP_EM = 0.45;
+const MISSION_BASE_FONT_SIZE_PX = 32;
+const MISSION_MIN_FONT_SIZE_PX = 15;
+const MISSION_LINE_GAP_EM = 0.2;
 const MISSION_INTRO_LINE = "An assembly of creative producers specializing in";
 const MISSION_WORKING_LINE = "working toward";
 const MISSION_ANCHOR_WORD = "for";
@@ -592,8 +592,8 @@ export default function Home() {
           </nav>
         </header>
 
-        <section className="grid flex-1 items-center gap-10 py-14 lg:grid-cols-[minmax(0,1fr)_18rem] lg:py-12">
-          <div className="max-w-[58rem]">
+        <section className="grid min-w-0 flex-1 items-center gap-10 py-14 lg:grid-cols-[minmax(0,1fr)_18rem] lg:py-12">
+          <div className="w-full min-w-0 max-w-[58rem]">
             <p className="mb-5 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[rgba(255,250,240,0.62)]">
               Mission
             </p>
@@ -823,33 +823,30 @@ function TypedSlot({
   );
 }
 
-function useMissionFontSize(leftText: string, rightText: string, whyText: string) {
+function useMissionFontSize(whatHowText: string, whoText: string, outcomeText: string) {
   const containerRef = useRef<HTMLHeadingElement | null>(null);
   const introMeasureRef = useRef<HTMLSpanElement | null>(null);
-  const leftMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const whatHowMeasureRef = useRef<HTMLSpanElement | null>(null);
   const anchorMeasureRef = useRef<HTMLSpanElement | null>(null);
-  const rightMeasureRef = useRef<HTMLSpanElement | null>(null);
-  const workingMeasureRef = useRef<HTMLSpanElement | null>(null);
-  const whyMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const whoMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const outcomeMeasureRef = useRef<HTMLSpanElement | null>(null);
   const [fontSize, setFontSize] = useState(MISSION_BASE_FONT_SIZE_PX);
 
   useEffect(() => {
     const container = containerRef.current;
     const introMeasure = introMeasureRef.current;
-    const leftMeasure = leftMeasureRef.current;
+    const whatHowMeasure = whatHowMeasureRef.current;
     const anchorMeasure = anchorMeasureRef.current;
-    const rightMeasure = rightMeasureRef.current;
-    const workingMeasure = workingMeasureRef.current;
-    const whyMeasure = whyMeasureRef.current;
+    const whoMeasure = whoMeasureRef.current;
+    const outcomeMeasure = outcomeMeasureRef.current;
 
     if (
       !container ||
       !introMeasure ||
-      !leftMeasure ||
+      !whatHowMeasure ||
       !anchorMeasure ||
-      !rightMeasure ||
-      !workingMeasure ||
-      !whyMeasure
+      !whoMeasure ||
+      !outcomeMeasure
     ) {
       return;
     }
@@ -858,25 +855,15 @@ function useMissionFontSize(leftText: string, rightText: string, whyText: string
 
     const update = () => {
       const containerWidth = container.getBoundingClientRect().width;
-      const widestFullLine = Math.max(
+      const widestLine = Math.max(
         introMeasure.getBoundingClientRect().width,
-        workingMeasure.getBoundingClientRect().width,
-        whyMeasure.getBoundingClientRect().width,
+        whatHowMeasure.getBoundingClientRect().width,
+        anchorMeasure.getBoundingClientRect().width,
+        whoMeasure.getBoundingClientRect().width,
+        outcomeMeasure.getBoundingClientRect().width,
         1,
       );
-      const widestAnchorSide = Math.max(
-        leftMeasure.getBoundingClientRect().width,
-        rightMeasure.getBoundingClientRect().width,
-      );
-      const anchorLineWidth =
-        widestAnchorSide * 2 +
-        anchorMeasure.getBoundingClientRect().width +
-        MISSION_ANCHOR_GAP_EM * MISSION_BASE_FONT_SIZE_PX * 2;
-      const scale = Math.min(
-        1,
-        containerWidth / widestFullLine,
-        containerWidth / Math.max(anchorLineWidth, 1),
-      );
+      const scale = Math.min(1, containerWidth / widestLine);
       const nextFontSize = Math.max(
         MISSION_MIN_FONT_SIZE_PX,
         Math.min(MISSION_BASE_FONT_SIZE_PX, MISSION_BASE_FONT_SIZE_PX * scale),
@@ -904,17 +891,16 @@ function useMissionFontSize(leftText: string, rightText: string, whyText: string
       observer?.disconnect();
       window.removeEventListener("resize", scheduleUpdate);
     };
-  }, [leftText, rightText, whyText]);
+  }, [whatHowText, whoText, outcomeText]);
 
   return {
     fontSize,
     containerRef,
     introMeasureRef,
-    leftMeasureRef,
+    whatHowMeasureRef,
     anchorMeasureRef,
-    rightMeasureRef,
-    workingMeasureRef,
-    whyMeasureRef,
+    whoMeasureRef,
+    outcomeMeasureRef,
   };
 }
 
@@ -957,56 +943,51 @@ function StatementParagraph({
     fontSize,
     containerRef,
     introMeasureRef,
-    leftMeasureRef,
+    whatHowMeasureRef,
     anchorMeasureRef,
-    rightMeasureRef,
-    workingMeasureRef,
-    whyMeasureRef,
-  } = useMissionFontSize(whatHow, `${who},`, `${why}.`);
+    whoMeasureRef,
+    outcomeMeasureRef,
+  } = useMissionFontSize(whatHow, `${who},`, `${MISSION_WORKING_LINE} ${why}.`);
 
   return (
     <h1
       ref={containerRef}
       data-testid="statement"
-      className="relative w-full max-w-[42rem] text-left font-semibold leading-[1.1] text-[#fffaf0]"
-      style={{ fontSize: `${fontSize}px` }}
+      className="relative flex w-[calc(100vw_-_2.5rem)] max-w-[42rem] flex-col items-start text-left font-semibold leading-[1.04] text-[#fffaf0] sm:w-[calc(100vw_-_3.5rem)] md:w-full"
+      style={{ fontSize: `${fontSize}px`, gap: `${MISSION_LINE_GAP_EM}em` }}
     >
       <MeasurementText measureRef={introMeasureRef}>{MISSION_INTRO_LINE}</MeasurementText>
-      <MeasurementText measureRef={leftMeasureRef}>{whatHow}</MeasurementText>
+      <MeasurementText measureRef={whatHowMeasureRef}>{whatHow}</MeasurementText>
       <MeasurementText measureRef={anchorMeasureRef}>{MISSION_ANCHOR_WORD}</MeasurementText>
-      <MeasurementText measureRef={rightMeasureRef}>{who},</MeasurementText>
-      <MeasurementText measureRef={workingMeasureRef}>{MISSION_WORKING_LINE}</MeasurementText>
-      <MeasurementText measureRef={whyMeasureRef}>{why}.</MeasurementText>
+      <MeasurementText measureRef={whoMeasureRef}>{who},</MeasurementText>
+      <MeasurementText measureRef={outcomeMeasureRef}>
+        {MISSION_WORKING_LINE} {why}.
+      </MeasurementText>
       <span className="block whitespace-nowrap">{MISSION_INTRO_LINE}</span>
-      <span
-        className="mt-[0.32em] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center whitespace-nowrap"
-        style={{ columnGap: `${MISSION_ANCHOR_GAP_EM}em` }}
-      >
-        <span className="min-w-0 whitespace-nowrap text-left">
-          <TypedSlot
-            text={whatHow}
-            accent={accent}
-            category="whatHow"
-            locked={Boolean(locks.whatHow)}
-            onToggleLock={onToggleLock}
-          />
-        </span>
-        <span className="whitespace-nowrap text-center text-[#fffaf0]">
-          {MISSION_ANCHOR_WORD}
-        </span>
-        <span className="min-w-0 whitespace-nowrap text-left">
-          <TypedSlot
-            text={who}
-            accent={accent}
-            category="who"
-            locked={Boolean(locks.who)}
-            onToggleLock={onToggleLock}
-          />
-          {","}
-        </span>
-      </span>
-      <span className="mt-[0.32em] block whitespace-nowrap">{MISSION_WORKING_LINE}</span>
       <span className="block whitespace-nowrap">
+        <TypedSlot
+          text={whatHow}
+          accent={accent}
+          category="whatHow"
+          locked={Boolean(locks.whatHow)}
+          onToggleLock={onToggleLock}
+        />
+      </span>
+      <span className="block whitespace-nowrap">
+        {MISSION_ANCHOR_WORD}
+      </span>
+      <span className="block whitespace-nowrap">
+        <TypedSlot
+          text={who}
+          accent={accent}
+          category="who"
+          locked={Boolean(locks.who)}
+          onToggleLock={onToggleLock}
+        />
+        {","}
+      </span>
+      <span className="block whitespace-nowrap">
+        {MISSION_WORKING_LINE}{" "}
         <TypedSlot
           text={why}
           accent={accent}

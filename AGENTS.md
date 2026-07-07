@@ -87,6 +87,14 @@ docs/PlanningDocDDMonYYYY_SiteVersionX.Y.md
 
 Commit the planning doc together with the site change it describes.
 
+## Editorial Typography Guardrail
+
+Before making editorial or text-layout changes, read:
+
+- `docs/EDITORIAL_TYPOGRAPHY_SCALE.md`
+
+Apply its checklist for legibility, contrast, line rhythm, alignment, and orphan control. Document any intentional exceptions in the new planning doc before changing code.
+
 ## Important
 
 - Do not assume GitHub push access is available until it is verified.
