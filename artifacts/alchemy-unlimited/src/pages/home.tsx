@@ -92,6 +92,9 @@ const CHANGE_COOLDOWN_MS = 1800;
 const DESKTOP_NOTE_BREAKPOINT = 1024;
 const NOTE_EDGE_PADDING = 24;
 const REVEAL_VIDEO_PATH = `${import.meta.env.BASE_URL}kaleidoscope-reveal.mp4`;
+const ANCHOR_LINE_BASE_FONT_SIZE_PX = 22;
+const ANCHOR_LINE_MIN_FONT_SIZE_PX = 9.5;
+const ANCHOR_LINE_CELL_PADDING_PX = 6;
 
 const DEFAULT_NOTE_SURFACE: NoteSurfaceState = {
   rotateX: -2,
@@ -815,6 +818,69 @@ function TypedSlot({
   );
 }
 
+function useAnchoredLineFontSize(leftText: string, rightText: string) {
+  const rowRef = useRef<HTMLSpanElement | null>(null);
+  const leftMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const rightMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const [fontSize, setFontSize] = useState(ANCHOR_LINE_BASE_FONT_SIZE_PX);
+
+  useEffect(() => {
+    const row = rowRef.current;
+    const leftMeasure = leftMeasureRef.current;
+    const rightMeasure = rightMeasureRef.current;
+
+    if (!row || !leftMeasure || !rightMeasure) return;
+
+    let frameId = 0;
+
+    const update = () => {
+      const rowWidth = row.getBoundingClientRect().width;
+      const styles = window.getComputedStyle(row);
+      const columnGap = Number.parseFloat(styles.columnGap) || 0;
+      const columns = styles.gridTemplateColumns.split(" ");
+      const anchorColumnWidth = Number.parseFloat(columns[1] ?? "") || 34;
+      const availableCellWidth =
+        (rowWidth - anchorColumnWidth - columnGap * 2) / 2 - ANCHOR_LINE_CELL_PADDING_PX;
+      const widestPhrase = Math.max(
+        leftMeasure.getBoundingClientRect().width,
+        rightMeasure.getBoundingClientRect().width,
+        1,
+      );
+      const nextFontSize = Math.max(
+        ANCHOR_LINE_MIN_FONT_SIZE_PX,
+        Math.min(
+          ANCHOR_LINE_BASE_FONT_SIZE_PX,
+          ANCHOR_LINE_BASE_FONT_SIZE_PX * (availableCellWidth / widestPhrase),
+        ),
+      );
+
+      setFontSize((current) =>
+        Math.abs(current - nextFontSize) > 0.25 ? nextFontSize : current,
+      );
+    };
+
+    const scheduleUpdate = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(update);
+    };
+
+    scheduleUpdate();
+
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleUpdate);
+    observer?.observe(row);
+    window.addEventListener("resize", scheduleUpdate);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      observer?.disconnect();
+      window.removeEventListener("resize", scheduleUpdate);
+    };
+  }, [leftText, rightText]);
+
+  return { fontSize, rowRef, leftMeasureRef, rightMeasureRef };
+}
+
 interface StatementParagraphProps {
   whatHow: string;
   who: string;
@@ -832,14 +898,41 @@ function StatementParagraph({
   accent,
   onToggleLock,
 }: StatementParagraphProps) {
+  const { fontSize, rowRef, leftMeasureRef, rightMeasureRef } = useAnchoredLineFontSize(
+    whatHow,
+    `${who},`,
+  );
+
   return (
     <h1
       data-testid="statement"
-      className="max-w-[30ch] text-[1.7rem] font-semibold leading-[1.14] text-[#fffaf0] sm:text-[2.25rem] md:text-[2.85rem] lg:text-[3.25rem]"
+      className="w-full max-w-[42rem] font-semibold leading-[1.12] text-[#fffaf0]"
     >
-      <span className="block">An assembly of creative producers specializing in</span>
-      <span className="mt-1 grid grid-cols-[minmax(0,1fr)_2.4ch_minmax(0,1fr)] items-start gap-x-3 sm:gap-x-4">
-        <span className="min-w-0 text-right">
+      <span className="block whitespace-nowrap text-[0.92rem] sm:text-[1.18rem] md:text-[1.42rem] lg:text-[1.64rem]">
+        An assembly of creative producers specializing in
+      </span>
+      <span
+        ref={rowRef}
+        className="relative mt-2 grid grid-cols-[minmax(0,1fr)_2.4ch_minmax(0,1fr)] items-center gap-x-2 whitespace-nowrap leading-[1.08] sm:gap-x-3"
+        style={{ fontSize: `${fontSize}px` }}
+      >
+        <span
+          ref={leftMeasureRef}
+          aria-hidden="true"
+          className="pointer-events-none invisible absolute left-0 top-0 whitespace-nowrap font-bold"
+          style={{ fontSize: `${ANCHOR_LINE_BASE_FONT_SIZE_PX}px` }}
+        >
+          {whatHow}
+        </span>
+        <span
+          ref={rightMeasureRef}
+          aria-hidden="true"
+          className="pointer-events-none invisible absolute left-0 top-0 whitespace-nowrap font-bold"
+          style={{ fontSize: `${ANCHOR_LINE_BASE_FONT_SIZE_PX}px` }}
+        >
+          {who},
+        </span>
+        <span className="min-w-0 whitespace-nowrap text-right">
           <TypedSlot
             text={whatHow}
             accent={accent}
@@ -849,7 +942,7 @@ function StatementParagraph({
           />
         </span>
         <span className="text-center text-[#fffaf0]">for</span>
-        <span className="min-w-0 text-left">
+        <span className="min-w-0 whitespace-nowrap text-left">
           <TypedSlot
             text={who}
             accent={accent}
@@ -860,8 +953,10 @@ function StatementParagraph({
           {","}
         </span>
       </span>
-      <span className="mt-1 block">working toward</span>
-      <span className="block">
+      <span className="mt-2 block whitespace-nowrap text-[0.92rem] sm:text-[1.18rem] md:text-[1.42rem] lg:text-[1.64rem]">
+        working toward
+      </span>
+      <span className="block whitespace-nowrap text-[0.92rem] sm:text-[1.18rem] md:text-[1.42rem] lg:text-[1.64rem]">
         <TypedSlot
           text={why}
           accent={accent}
