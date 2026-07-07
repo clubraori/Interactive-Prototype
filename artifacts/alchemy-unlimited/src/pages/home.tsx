@@ -587,7 +587,7 @@ export default function Home() {
         <section className="grid flex-1 items-center gap-10 py-14 lg:grid-cols-[minmax(0,1fr)_18rem] lg:py-12">
           <div className="max-w-[58rem]">
             <p className="mb-5 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[rgba(255,250,240,0.62)]">
-              Live statement
+              Mission
             </p>
             <StatementParagraph
               whatHow={currentValues.whatHow}
@@ -835,33 +835,42 @@ function StatementParagraph({
   return (
     <h1
       data-testid="statement"
-      className="max-w-[30ch] text-[1.7rem] font-semibold leading-[1.14] text-[#fffaf0] sm:text-[2.25rem] md:text-[2.85rem] lg:text-[3.25rem]"
+      className="max-w-[34ch] text-[1.7rem] font-semibold leading-[1.14] text-[#fffaf0] sm:text-[2.25rem] md:text-[2.85rem] lg:text-[3.25rem]"
     >
-      An assembly of creative producers specializing in{" "}
-      <TypedSlot
-        text={whatHow}
-        accent={accent}
-        category="whatHow"
-        locked={Boolean(locks.whatHow)}
-        onToggleLock={onToggleLock}
-      />
-      for{" "}
-      <TypedSlot
-        text={who}
-        accent={accent}
-        category="who"
-        locked={Boolean(locks.who)}
-        onToggleLock={onToggleLock}
-      />
-      , working toward{" "}
-      <TypedSlot
-        text={why}
-        accent={accent}
-        category="why"
-        locked={Boolean(locks.why)}
-        onToggleLock={onToggleLock}
-      />
-      .
+      <span className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-x-3 gap-y-2 sm:gap-x-4">
+        <span className="min-w-0 text-right">
+          An assembly of creative producers specializing in{" "}
+          <TypedSlot
+            text={whatHow}
+            accent={accent}
+            category="whatHow"
+            locked={Boolean(locks.whatHow)}
+            onToggleLock={onToggleLock}
+          />
+        </span>
+        <span className="px-1 text-center text-[#fffaf0]">for</span>
+        <span className="min-w-0 text-left">
+          <TypedSlot
+            text={who}
+            accent={accent}
+            category="who"
+            locked={Boolean(locks.who)}
+            onToggleLock={onToggleLock}
+          />
+          ,
+        </span>
+      </span>
+      <span className="mt-5 block text-center sm:mt-6">working toward</span>
+      <span className="mt-5 block text-center sm:mt-6">
+        <TypedSlot
+          text={why}
+          accent={accent}
+          category="why"
+          locked={Boolean(locks.why)}
+          onToggleLock={onToggleLock}
+        />
+        .
+      </span>
     </h1>
   );
 }
