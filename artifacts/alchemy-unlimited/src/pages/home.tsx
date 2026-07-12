@@ -105,22 +105,22 @@ const VALUE_BANKS: Record<VariableKey, string[]> = {
 };
 
 const CATEGORY_ORDER: VariableKey[] = ["whatHow", "who", "why"];
-const ACCENT_COLORS = ["#ff8a47", "#55d6c2", "#9f94ff", "#ffd35a"];
+const ACCENT_COLORS = ["#c65324", "#147f73", "#6b5bd6", "#9c6b00"];
 const BRAND_GRADIENT_MOODS: GradientMood[] = [
   {
-    start: [17, 16, 15],
-    mid: [85, 214, 194],
-    end: [159, 148, 255],
+    start: [255, 255, 255],
+    mid: [183, 239, 229],
+    end: [218, 215, 255],
   },
   {
-    start: [18, 17, 14],
-    mid: [255, 138, 71],
-    end: [255, 211, 90],
+    start: [255, 252, 243],
+    mid: [255, 199, 165],
+    end: [255, 237, 167],
   },
   {
-    start: [14, 12, 18],
-    mid: [159, 148, 255],
-    end: [255, 103, 55],
+    start: [253, 251, 255],
+    mid: [219, 216, 255],
+    end: [255, 193, 172],
   },
 ];
 const X_STEP_PX = 190;
@@ -314,10 +314,10 @@ export default function Home() {
     layer.style.setProperty("--gradient-end", rgbVariable(mood.end));
     layer.style.setProperty("--gradient-y", `${18 + y * 64}%`);
     layer.style.setProperty("--pixel-size", `${Math.round(18 - x * 11)}px`);
-    layer.style.setProperty("--pixel-opacity", `${0.028 + x * 0.085}`);
-    layer.style.setProperty("--fragment-saturate", `${0.34 + y * 0.14}`);
-    layer.style.setProperty("--fragment-brightness", `${0.66 + x * 0.08}`);
-    layer.style.setProperty("--fragment-contrast", `${0.88 + x * 0.12}`);
+    layer.style.setProperty("--pixel-opacity", `${0.022 + x * 0.06}`);
+    layer.style.setProperty("--fragment-saturate", `${0.26 + y * 0.12}`);
+    layer.style.setProperty("--fragment-brightness", `${0.9 + x * 0.08}`);
+    layer.style.setProperty("--fragment-contrast", `${0.82 + x * 0.1}`);
   }, []);
 
   const clampStickyNotePosition = useCallback((position: NotePosition): NotePosition => {
@@ -558,34 +558,34 @@ export default function Home() {
   return (
     <main
       style={{ fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }}
-      className="relative min-h-screen overflow-hidden bg-[#11100f] text-[#f8f4ea]"
+      className="relative min-h-screen overflow-hidden bg-[#fffdf8] text-[#211d17]"
     >
       <div
         aria-hidden
         ref={motionLayerRef}
         className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
         style={{
-          ["--gradient-start" as string]: "17 16 15",
-          ["--gradient-mid" as string]: "255 138 71",
-          ["--gradient-end" as string]: "255 211 90",
+          ["--gradient-start" as string]: "255 252 243",
+          ["--gradient-mid" as string]: "255 199 165",
+          ["--gradient-end" as string]: "255 237 167",
           ["--gradient-y" as string]: "48%",
           ["--pixel-size" as string]: "14px",
-          ["--pixel-opacity" as string]: "0.055",
-          ["--fragment-saturate" as string]: "0.42",
-          ["--fragment-brightness" as string]: "0.7",
-          ["--fragment-contrast" as string]: "0.94",
+          ["--pixel-opacity" as string]: "0.04",
+          ["--fragment-saturate" as string]: "0.34",
+          ["--fragment-brightness" as string]: "0.94",
+          ["--fragment-contrast" as string]: "0.9",
         }}
       >
         <EditorialMediaField />
       </div>
 
-      <div className="pointer-events-none fixed inset-0 z-[1] bg-[linear-gradient(180deg,rgba(17,16,15,0.08),rgba(17,16,15,0.42))]" />
+      <div className="pointer-events-none fixed inset-0 z-[1] bg-[linear-gradient(180deg,rgba(255,255,255,0.26),rgba(255,252,246,0.5))]" />
 
       <div className="relative z-10 flex min-h-screen flex-col px-5 py-5 sm:px-7 md:px-10 md:py-8">
         <header className="flex items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <span className="h-3 w-3 bg-[#ff6737]" />
-            <Link href="/" className="text-[0.92rem] font-semibold text-[#fffaf0]">
+            <Link href="/" className="text-[0.92rem] font-semibold text-[#211d17]">
               Alchemy Unlimited
             </Link>
           </div>
@@ -602,7 +602,7 @@ export default function Home() {
                   onFocus={() => setActiveMenuSection(section.key)}
                   className="text-[0.78rem] font-semibold uppercase tracking-[0.14em] transition-colors duration-150"
                   style={{
-                    color: isActive ? "#fffaf0" : "rgba(255,250,240,0.58)",
+                    color: isActive ? "#211d17" : "rgba(33,29,23,0.48)",
                   }}
                 >
                   {section.label}
@@ -614,7 +614,7 @@ export default function Home() {
 
         <section className="grid min-w-0 flex-1 items-center gap-10 py-14 lg:grid-cols-[minmax(0,1fr)_18rem] lg:py-12">
           <div className="w-full min-w-0 max-w-[58rem]">
-            <p className="mb-5 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[rgba(255,250,240,0.62)]">
+            <p className="mb-5 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[rgba(33,29,23,0.52)]">
               Mission
             </p>
             <StatementParagraph
@@ -682,30 +682,28 @@ function EditorialMediaField() {
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(115deg, rgb(17 16 15 / 0.99) 0%, rgb(18 19 18 / 0.96) 42%, rgb(var(--gradient-start) / 0.98) 100%)",
+            "linear-gradient(115deg, rgb(255 255 255 / 1) 0%, rgb(255 252 246 / 0.96) 42%, rgb(var(--gradient-start) / 0.9) 100%)",
         }}
       />
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(135deg, rgb(var(--gradient-mid) / 0.2) 0%, transparent 42%, rgb(var(--gradient-end) / 0.18) 100%)",
-          mixBlendMode: "screen",
+            "linear-gradient(135deg, rgb(var(--gradient-mid) / 0.42) 0%, transparent 44%, rgb(var(--gradient-end) / 0.4) 100%)",
         }}
       />
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, transparent 0%, rgb(var(--gradient-mid) / 0.24) var(--gradient-y), rgb(var(--gradient-end) / 0.12) 100%)",
-          mixBlendMode: "screen",
+            "linear-gradient(180deg, transparent 0%, rgb(var(--gradient-mid) / 0.32) var(--gradient-y), rgb(var(--gradient-end) / 0.22) 100%)",
         }}
       />
       <div
         className="absolute inset-0"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(255,250,240,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(255,250,240,0.12) 1px, transparent 1px)",
+            "linear-gradient(rgba(33,29,23,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(33,29,23,0.12) 1px, transparent 1px)",
           backgroundSize: "var(--pixel-size) var(--pixel-size)",
           opacity: "var(--pixel-opacity)",
         }}
@@ -943,16 +941,16 @@ function TypedSlot({
       aria-pressed={locked}
       className="inline align-baseline font-bold transition-colors duration-150"
       style={{
-        color: locked ? "#fffaf0" : accent,
+        color: locked ? "#211d17" : accent,
         backgroundColor: "transparent",
-        textShadow: "0 1px 18px rgba(0, 0, 0, 0.24)",
+        textShadow: "0 1px 12px rgba(255, 255, 255, 0.34)",
         textAlign: "inherit",
       }}
     >
       {displayText}
       <span
         className="ml-[1px] inline-block h-[0.82em] w-px translate-y-[2px] align-baseline animate-pulse"
-        style={{ backgroundColor: locked ? "#fffaf0" : accent }}
+        style={{ backgroundColor: locked ? "#211d17" : accent }}
       />
     </button>
   );
@@ -1088,7 +1086,7 @@ function StatementParagraph({
     <h1
       ref={containerRef}
       data-testid="statement"
-      className="relative flex w-[calc(100vw_-_2.5rem)] max-w-[42rem] flex-col items-start text-left font-semibold leading-[1.04] text-[#fffaf0] sm:w-[calc(100vw_-_3.5rem)] md:w-full"
+      className="relative flex w-[calc(100vw_-_2.5rem)] max-w-[42rem] flex-col items-start text-left font-semibold leading-[1.04] text-[#211d17] sm:w-[calc(100vw_-_3.5rem)] md:w-full"
       style={{ fontSize: `${fontSize}px`, gap: `${MISSION_LINE_GAP_EM}em` }}
     >
       <MeasurementText measureRef={introMeasureRef}>{MISSION_INTRO_LINE}</MeasurementText>

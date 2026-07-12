@@ -45,6 +45,16 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        entryFileNames: "assets/index.js",
+        chunkFileNames: "assets/[name].js",
+        assetFileNames: (assetInfo) =>
+          assetInfo.names.some((name) => name.endsWith(".css"))
+            ? "assets/index.css"
+            : "assets/[name][extname]",
+      },
+    },
   },
   server: {
     port,
