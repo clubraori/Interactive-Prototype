@@ -57,6 +57,14 @@ interface MediaFragment {
   style: CSSProperties;
 }
 
+type Rgb = readonly [number, number, number];
+
+interface GradientMood {
+  start: Rgb;
+  mid: Rgb;
+  end: Rgb;
+}
+
 const VALUE_BANKS: Record<VariableKey, string[]> = {
   whatHow: [
     "participatory cultural strategy",
@@ -98,6 +106,23 @@ const VALUE_BANKS: Record<VariableKey, string[]> = {
 
 const CATEGORY_ORDER: VariableKey[] = ["whatHow", "who", "why"];
 const ACCENT_COLORS = ["#ff8a47", "#55d6c2", "#9f94ff", "#ffd35a"];
+const BRAND_GRADIENT_MOODS: GradientMood[] = [
+  {
+    start: [17, 16, 15],
+    mid: [85, 214, 194],
+    end: [159, 148, 255],
+  },
+  {
+    start: [18, 17, 14],
+    mid: [255, 138, 71],
+    end: [255, 211, 90],
+  },
+  {
+    start: [14, 12, 18],
+    mid: [159, 148, 255],
+    end: [255, 103, 55],
+  },
+];
 const X_STEP_PX = 190;
 const Y_STEP_PX = 150;
 const CHANGE_COOLDOWN_MS = 1800;
@@ -204,6 +229,34 @@ function positiveMod(value: number, length: number): number {
   return ((value % length) + length) % length;
 }
 
+function mixRgb(from: Rgb, to: Rgb, amount: number): Rgb {
+  const t = Math.max(0, Math.min(1, amount));
+  return [
+    Math.round(lerp(from[0], to[0], t)),
+    Math.round(lerp(from[1], to[1], t)),
+    Math.round(lerp(from[2], to[2], t)),
+  ];
+}
+
+function rgbVariable(value: Rgb): string {
+  return `${value[0]} ${value[1]} ${value[2]}`;
+}
+
+function gradientMoodForY(y: number): GradientMood {
+  const clampedY = Math.max(0, Math.min(1, y));
+  const scaled = clampedY * (BRAND_GRADIENT_MOODS.length - 1);
+  const index = Math.min(Math.floor(scaled), BRAND_GRADIENT_MOODS.length - 2);
+  const amount = scaled - index;
+  const from = BRAND_GRADIENT_MOODS[index];
+  const to = BRAND_GRADIENT_MOODS[index + 1];
+
+  return {
+    start: mixRgb(from.start, to.start, amount),
+    mid: mixRgb(from.mid, to.mid, amount),
+    end: mixRgb(from.end, to.end, amount),
+  };
+}
+
 export default function Home() {
   const smoothX = useRef(0.38);
   const smoothY = useRef(0.42);
@@ -238,7 +291,6 @@ export default function Home() {
     why: null,
   });
   const [accentIndex, setAccentIndex] = useState(0);
-  const [pulseKey, setPulseKey] = useState(0);
   const [activeMenuSection, setActiveMenuSection] = useState<MenuSectionKey>("about");
   const [isDesktopNote, setIsDesktopNote] = useState(false);
   const [isDraggingNote, setIsDraggingNote] = useState(false);
@@ -255,15 +307,17 @@ export default function Home() {
     const layer = motionLayerRef.current;
     if (!layer) return;
 
-    layer.style.setProperty("--lens-x", `${x * 100}%`);
-    layer.style.setProperty("--lens-y", `${y * 100}%`);
-    layer.style.setProperty("--grid-size", `${Math.round(26 + y * 22)}px`);
-    layer.style.setProperty("--grid-opacity", `${0.035 + y * 0.055}`);
-    layer.style.setProperty("--fragment-saturate", `${0.32 + y * 0.16}`);
+    const mood = gradientMoodForY(y);
+
+    layer.style.setProperty("--gradient-start", rgbVariable(mood.start));
+    layer.style.setProperty("--gradient-mid", rgbVariable(mood.mid));
+    layer.style.setProperty("--gradient-end", rgbVariable(mood.end));
+    layer.style.setProperty("--gradient-y", `${18 + y * 64}%`);
+    layer.style.setProperty("--pixel-size", `${Math.round(18 - x * 11)}px`);
+    layer.style.setProperty("--pixel-opacity", `${0.028 + x * 0.085}`);
+    layer.style.setProperty("--fragment-saturate", `${0.34 + y * 0.14}`);
     layer.style.setProperty("--fragment-brightness", `${0.66 + x * 0.08}`);
     layer.style.setProperty("--fragment-contrast", `${0.88 + x * 0.12}`);
-    layer.style.setProperty("--field-warm-opacity", `${Math.max(0, y - 0.22) * 0.18}`);
-    layer.style.setProperty("--field-cool-opacity", `${Math.max(0, 0.78 - y) * 0.16}`);
   }, []);
 
   const clampStickyNotePosition = useCallback((position: NotePosition): NotePosition => {
@@ -334,7 +388,6 @@ export default function Home() {
       previousValuesRef.current = next;
       setIndices(next);
       setAccentIndex((value) => (value + 1) % ACCENT_COLORS.length);
-      setPulseKey((value) => value + 1);
 
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(8);
@@ -512,21 +565,21 @@ export default function Home() {
         ref={motionLayerRef}
         className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
         style={{
-          ["--lens-x" as string]: "38%",
-          ["--lens-y" as string]: "42%",
-          ["--grid-size" as string]: "34px",
-          ["--grid-opacity" as string]: "0.055",
+          ["--gradient-start" as string]: "17 16 15",
+          ["--gradient-mid" as string]: "255 138 71",
+          ["--gradient-end" as string]: "255 211 90",
+          ["--gradient-y" as string]: "48%",
+          ["--pixel-size" as string]: "14px",
+          ["--pixel-opacity" as string]: "0.055",
           ["--fragment-saturate" as string]: "0.42",
           ["--fragment-brightness" as string]: "0.7",
           ["--fragment-contrast" as string]: "0.94",
-          ["--field-warm-opacity" as string]: "0.08",
-          ["--field-cool-opacity" as string]: "0.12",
         }}
       >
-        <EditorialMediaField activeAccent={activeAccent} pulseKey={pulseKey} />
+        <EditorialMediaField />
       </div>
 
-      <div className="pointer-events-none fixed inset-0 z-[1] bg-[radial-gradient(circle_at_42%_34%,rgba(255,255,255,0.06),transparent_34%),linear-gradient(180deg,rgba(17,16,15,0.1),rgba(17,16,15,0.42))]" />
+      <div className="pointer-events-none fixed inset-0 z-[1] bg-[linear-gradient(180deg,rgba(17,16,15,0.08),rgba(17,16,15,0.42))]" />
 
       <div className="relative z-10 flex min-h-screen flex-col px-5 py-5 sm:px-7 md:px-10 md:py-8">
         <header className="flex items-center justify-between gap-6">
@@ -622,33 +675,29 @@ export default function Home() {
   );
 }
 
-interface EditorialMediaFieldProps {
-  activeAccent: string;
-  pulseKey: number;
-}
-
-function EditorialMediaField({ activeAccent, pulseKey }: EditorialMediaFieldProps) {
+function EditorialMediaField() {
   return (
     <>
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(115deg, rgba(17,16,15,0.98) 0%, rgba(18,19,18,0.94) 54%, rgba(9,10,10,0.98) 100%)",
+            "linear-gradient(115deg, rgb(17 16 15 / 0.99) 0%, rgb(18 19 18 / 0.96) 42%, rgb(var(--gradient-start) / 0.98) 100%)",
         }}
       />
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(circle at var(--lens-x) var(--lens-y), rgba(255,250,240,0.12) 0%, rgba(255,250,240,0.045) 18%, transparent 42%)",
+            "linear-gradient(135deg, rgb(var(--gradient-mid) / 0.2) 0%, transparent 42%, rgb(var(--gradient-end) / 0.18) 100%)",
+          mixBlendMode: "screen",
         }}
       />
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, rgba(28,117,128,var(--field-cool-opacity)) 0%, transparent 48%, rgba(255,103,55,var(--field-warm-opacity)) 100%)",
+            "linear-gradient(180deg, transparent 0%, rgb(var(--gradient-mid) / 0.24) var(--gradient-y), rgb(var(--gradient-end) / 0.12) 100%)",
           mixBlendMode: "screen",
         }}
       />
@@ -657,21 +706,8 @@ function EditorialMediaField({ activeAccent, pulseKey }: EditorialMediaFieldProp
         style={{
           backgroundImage:
             "linear-gradient(rgba(255,250,240,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(255,250,240,0.12) 1px, transparent 1px)",
-          backgroundSize: "var(--grid-size) var(--grid-size)",
-          opacity: "var(--grid-opacity)",
-        }}
-      />
-      <div
-        className="absolute h-px w-[min(18rem,44vw)] transition-[background-color,box-shadow,opacity] duration-150 ease-out"
-        style={{
-          left: "clamp(1.5rem, calc(var(--lens-x) - 9rem), calc(100vw - 20rem))",
-          top: "var(--lens-y)",
-          backgroundColor: pulseKey % 2 === 0 ? "rgba(248,244,234,0.16)" : activeAccent,
-          boxShadow:
-            pulseKey % 2 === 0
-              ? "0 0 18px rgba(248,244,234,0.08)"
-              : `0 0 28px ${activeAccent}`,
-          opacity: pulseKey % 2 === 0 ? 0.55 : 0.72,
+          backgroundSize: "var(--pixel-size) var(--pixel-size)",
+          opacity: "var(--pixel-opacity)",
         }}
       />
       {MEDIA_FRAGMENTS.map((fragment) => (
