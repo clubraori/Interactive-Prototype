@@ -613,7 +613,7 @@ export default function Home() {
         </header>
 
         <section className="grid min-w-0 flex-1 items-center gap-10 py-14 lg:grid-cols-[minmax(0,1fr)_18rem] lg:py-12">
-          <div className="w-full min-w-0 max-w-[58rem]">
+          <div className="w-full min-w-0 max-w-[58rem] lg:-translate-y-16 xl:-translate-y-20">
             <p className="mb-5 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[rgba(33,29,23,0.52)]">
               Mission
             </p>
@@ -956,13 +956,14 @@ function TypedSlot({
   );
 }
 
-function useMissionFontSize(whatHowText: string, whoText: string, outcomeText: string) {
+function useMissionFontSize(whatHowText: string, whoText: string, whyText: string) {
   const containerRef = useRef<HTMLHeadingElement | null>(null);
   const introMeasureRef = useRef<HTMLSpanElement | null>(null);
   const whatHowMeasureRef = useRef<HTMLSpanElement | null>(null);
   const anchorMeasureRef = useRef<HTMLSpanElement | null>(null);
   const whoMeasureRef = useRef<HTMLSpanElement | null>(null);
-  const outcomeMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const workingMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const whyMeasureRef = useRef<HTMLSpanElement | null>(null);
   const [fontSize, setFontSize] = useState(MISSION_BASE_FONT_SIZE_PX);
 
   useEffect(() => {
@@ -971,7 +972,8 @@ function useMissionFontSize(whatHowText: string, whoText: string, outcomeText: s
     const whatHowMeasure = whatHowMeasureRef.current;
     const anchorMeasure = anchorMeasureRef.current;
     const whoMeasure = whoMeasureRef.current;
-    const outcomeMeasure = outcomeMeasureRef.current;
+    const workingMeasure = workingMeasureRef.current;
+    const whyMeasure = whyMeasureRef.current;
 
     if (
       !container ||
@@ -979,7 +981,8 @@ function useMissionFontSize(whatHowText: string, whoText: string, outcomeText: s
       !whatHowMeasure ||
       !anchorMeasure ||
       !whoMeasure ||
-      !outcomeMeasure
+      !workingMeasure ||
+      !whyMeasure
     ) {
       return;
     }
@@ -993,7 +996,8 @@ function useMissionFontSize(whatHowText: string, whoText: string, outcomeText: s
         whatHowMeasure.getBoundingClientRect().width,
         anchorMeasure.getBoundingClientRect().width,
         whoMeasure.getBoundingClientRect().width,
-        outcomeMeasure.getBoundingClientRect().width,
+        workingMeasure.getBoundingClientRect().width,
+        whyMeasure.getBoundingClientRect().width,
         1,
       );
       const scale = Math.min(1, containerWidth / widestLine);
@@ -1024,7 +1028,7 @@ function useMissionFontSize(whatHowText: string, whoText: string, outcomeText: s
       observer?.disconnect();
       window.removeEventListener("resize", scheduleUpdate);
     };
-  }, [whatHowText, whoText, outcomeText]);
+  }, [whatHowText, whoText, whyText]);
 
   return {
     fontSize,
@@ -1033,7 +1037,8 @@ function useMissionFontSize(whatHowText: string, whoText: string, outcomeText: s
     whatHowMeasureRef,
     anchorMeasureRef,
     whoMeasureRef,
-    outcomeMeasureRef,
+    workingMeasureRef,
+    whyMeasureRef,
   };
 }
 
@@ -1079,8 +1084,9 @@ function StatementParagraph({
     whatHowMeasureRef,
     anchorMeasureRef,
     whoMeasureRef,
-    outcomeMeasureRef,
-  } = useMissionFontSize(whatHow, `${who},`, `${MISSION_WORKING_LINE} ${why}.`);
+    workingMeasureRef,
+    whyMeasureRef,
+  } = useMissionFontSize(whatHow, `${who},`, `${why}.`);
 
   return (
     <h1
@@ -1093,9 +1099,8 @@ function StatementParagraph({
       <MeasurementText measureRef={whatHowMeasureRef}>{whatHow}</MeasurementText>
       <MeasurementText measureRef={anchorMeasureRef}>{MISSION_ANCHOR_WORD}</MeasurementText>
       <MeasurementText measureRef={whoMeasureRef}>{who},</MeasurementText>
-      <MeasurementText measureRef={outcomeMeasureRef}>
-        {MISSION_WORKING_LINE} {why}.
-      </MeasurementText>
+      <MeasurementText measureRef={workingMeasureRef}>{MISSION_WORKING_LINE}</MeasurementText>
+      <MeasurementText measureRef={whyMeasureRef}>{why}.</MeasurementText>
       <span className="block whitespace-nowrap">{MISSION_INTRO_LINE}</span>
       <span className="block whitespace-nowrap">
         <TypedSlot
@@ -1120,7 +1125,9 @@ function StatementParagraph({
         {","}
       </span>
       <span className="block whitespace-nowrap">
-        {MISSION_WORKING_LINE}{" "}
+        {MISSION_WORKING_LINE}
+      </span>
+      <span className="block whitespace-nowrap">
         <TypedSlot
           text={why}
           accent={accent}
