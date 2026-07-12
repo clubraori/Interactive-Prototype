@@ -47,6 +47,16 @@ interface MenuSectionContent {
   body: string;
 }
 
+interface MediaFragment {
+  key: string;
+  label: string;
+  startAt: number;
+  endAt: number;
+  objectPosition: string;
+  delay: string;
+  style: CSSProperties;
+}
+
 const VALUE_BANKS: Record<VariableKey, string[]> = {
   whatHow: [
     "participatory cultural strategy",
@@ -94,6 +104,50 @@ const CHANGE_COOLDOWN_MS = 1800;
 const DESKTOP_NOTE_BREAKPOINT = 1024;
 const NOTE_EDGE_PADDING = 24;
 const REVEAL_VIDEO_PATH = `${import.meta.env.BASE_URL}kaleidoscope-reveal.mp4`;
+const MEDIA_FRAGMENTS: MediaFragment[] = [
+  {
+    key: "square-room",
+    label: "Square footage fragment",
+    startAt: 0.6,
+    endAt: 1.8,
+    objectPosition: "57% 48%",
+    delay: "0s",
+    style: {
+      top: "clamp(6.75rem, 15vh, 9rem)",
+      right: "clamp(11rem, 34vw, 28rem)",
+      width: "clamp(7.5rem, 16vw, 14rem)",
+      aspectRatio: "1 / 1",
+    },
+  },
+  {
+    key: "horizontal-room",
+    label: "Horizontal footage fragment",
+    startAt: 28,
+    endAt: 29.4,
+    objectPosition: "50% 52%",
+    delay: "-12s",
+    style: {
+      left: "clamp(1.25rem, 8vw, 7rem)",
+      bottom: "clamp(3.25rem, 9vh, 7rem)",
+      width: "clamp(11.5rem, 28vw, 22rem)",
+      aspectRatio: "16 / 9",
+    },
+  },
+  {
+    key: "vertical-conversation",
+    label: "Vertical footage fragment",
+    startAt: 44,
+    endAt: 45.6,
+    objectPosition: "52% 46%",
+    delay: "-6s",
+    style: {
+      top: "clamp(18rem, 45vh, 28rem)",
+      right: "clamp(12rem, 34vw, 32rem)",
+      width: "clamp(7rem, 13vw, 12rem)",
+      aspectRatio: "3 / 4",
+    },
+  },
+];
 const MISSION_BASE_FONT_SIZE_PX = 32;
 const MISSION_MIN_FONT_SIZE_PX = 15;
 const MISSION_LINE_GAP_EM = 0.2;
@@ -201,17 +255,15 @@ export default function Home() {
     const layer = motionLayerRef.current;
     if (!layer) return;
 
-    layer.style.setProperty("--clarity-x", `${x * 100}%`);
     layer.style.setProperty("--lens-x", `${x * 100}%`);
     layer.style.setProperty("--lens-y", `${y * 100}%`);
-    layer.style.setProperty("--pixel-size", `${Math.round(5 + y * 19)}px`);
-    layer.style.setProperty("--pixel-opacity", `${0.08 + y * 0.28}`);
-    layer.style.setProperty("--scan-opacity", `${0.04 + y * 0.18}`);
-    layer.style.setProperty("--hue-rotate", `${Math.round((y - 0.5) * 48)}deg`);
-    layer.style.setProperty("--saturate", `${0.76 + y * 0.72}`);
-    layer.style.setProperty("--contrast", `${0.94 + x * 0.16}`);
-    layer.style.setProperty("--warm-opacity", `${Math.max(0, y - 0.22) * 0.42}`);
-    layer.style.setProperty("--cool-opacity", `${Math.max(0, 0.78 - y) * 0.34}`);
+    layer.style.setProperty("--grid-size", `${Math.round(26 + y * 22)}px`);
+    layer.style.setProperty("--grid-opacity", `${0.035 + y * 0.055}`);
+    layer.style.setProperty("--fragment-saturate", `${0.32 + y * 0.16}`);
+    layer.style.setProperty("--fragment-brightness", `${0.66 + x * 0.08}`);
+    layer.style.setProperty("--fragment-contrast", `${0.88 + x * 0.12}`);
+    layer.style.setProperty("--field-warm-opacity", `${Math.max(0, y - 0.22) * 0.18}`);
+    layer.style.setProperty("--field-cool-opacity", `${Math.max(0, 0.78 - y) * 0.16}`);
   }, []);
 
   const clampStickyNotePosition = useCallback((position: NotePosition): NotePosition => {
@@ -460,106 +512,21 @@ export default function Home() {
         ref={motionLayerRef}
         className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
         style={{
-          ["--clarity-x" as string]: "38%",
           ["--lens-x" as string]: "38%",
           ["--lens-y" as string]: "42%",
-          ["--pixel-size" as string]: "12px",
-          ["--pixel-opacity" as string]: "0.16",
-          ["--scan-opacity" as string]: "0.08",
-          ["--hue-rotate" as string]: "0deg",
-          ["--saturate" as string]: "1",
-          ["--contrast" as string]: "1",
-          ["--warm-opacity" as string]: "0.12",
-          ["--cool-opacity" as string]: "0.18",
+          ["--grid-size" as string]: "34px",
+          ["--grid-opacity" as string]: "0.055",
+          ["--fragment-saturate" as string]: "0.42",
+          ["--fragment-brightness" as string]: "0.7",
+          ["--fragment-contrast" as string]: "0.94",
+          ["--field-warm-opacity" as string]: "0.08",
+          ["--field-cool-opacity" as string]: "0.12",
         }}
       >
-        <video
-          className="absolute inset-0 h-full w-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          src={REVEAL_VIDEO_PATH}
-          style={{
-            filter:
-              "blur(11px) grayscale(0.2) hue-rotate(var(--hue-rotate)) saturate(var(--saturate)) contrast(var(--contrast)) brightness(0.72)",
-            transform: "scale(1.05)",
-          }}
-        />
-        <div
-          className="absolute inset-y-0 left-0 overflow-hidden"
-          style={{
-            width: "var(--clarity-x)",
-            WebkitMaskImage:
-              "linear-gradient(90deg, #000 0%, #000 calc(100% - 96px), transparent 100%)",
-            maskImage:
-              "linear-gradient(90deg, #000 0%, #000 calc(100% - 96px), transparent 100%)",
-          }}
-        >
-          <video
-            className="h-full max-w-none object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            src={REVEAL_VIDEO_PATH}
-            style={{
-              width: "100vw",
-              filter:
-                "hue-rotate(var(--hue-rotate)) saturate(calc(var(--saturate) + 0.24)) contrast(calc(var(--contrast) + 0.06)) brightness(0.9)",
-            }}
-          />
-        </div>
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(28,117,128,var(--cool-opacity)) 0%, transparent 48%, rgba(255,103,55,var(--warm-opacity)) 100%)",
-            mixBlendMode: "screen",
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.18) 1px, transparent 1px)",
-            backgroundSize: "var(--pixel-size) var(--pixel-size)",
-            opacity: "var(--pixel-opacity)",
-            mixBlendMode: "overlay",
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(180deg, transparent 0, transparent 5px, rgba(255,255,255,0.22) 6px)",
-            opacity: "var(--scan-opacity)",
-            mixBlendMode: "soft-light",
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at var(--lens-x) var(--lens-y), rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.12) 9%, transparent 24%), linear-gradient(90deg, rgba(17,16,15,0.1) 0%, rgba(17,16,15,0.36) 100%)",
-          }}
-        />
-        <div
-          className="absolute inset-y-0 w-px transition-[background-color,box-shadow] duration-150 ease-out"
-          style={{
-            left: "calc(var(--clarity-x) - 0.5px)",
-            backgroundColor: pulseKey % 2 === 0 ? "rgba(248,244,234,0.34)" : activeAccent,
-            boxShadow:
-              pulseKey % 2 === 0
-                ? "0 0 26px rgba(248,244,234,0.18)"
-                : `0 0 36px ${activeAccent}`,
-          }}
-        />
+        <EditorialMediaField activeAccent={activeAccent} pulseKey={pulseKey} />
       </div>
 
-      <div className="pointer-events-none fixed inset-0 z-[1] bg-[radial-gradient(circle_at_42%_34%,rgba(255,255,255,0.08),transparent_34%),linear-gradient(180deg,rgba(17,16,15,0.24),rgba(17,16,15,0.7))]" />
+      <div className="pointer-events-none fixed inset-0 z-[1] bg-[radial-gradient(circle_at_42%_34%,rgba(255,255,255,0.06),transparent_34%),linear-gradient(180deg,rgba(17,16,15,0.1),rgba(17,16,15,0.42))]" />
 
       <div className="relative z-10 flex min-h-screen flex-col px-5 py-5 sm:px-7 md:px-10 md:py-8">
         <header className="flex items-center justify-between gap-6">
@@ -652,6 +619,138 @@ export default function Home() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+interface EditorialMediaFieldProps {
+  activeAccent: string;
+  pulseKey: number;
+}
+
+function EditorialMediaField({ activeAccent, pulseKey }: EditorialMediaFieldProps) {
+  return (
+    <>
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(115deg, rgba(17,16,15,0.98) 0%, rgba(18,19,18,0.94) 54%, rgba(9,10,10,0.98) 100%)",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at var(--lens-x) var(--lens-y), rgba(255,250,240,0.12) 0%, rgba(255,250,240,0.045) 18%, transparent 42%)",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(28,117,128,var(--field-cool-opacity)) 0%, transparent 48%, rgba(255,103,55,var(--field-warm-opacity)) 100%)",
+          mixBlendMode: "screen",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,250,240,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(255,250,240,0.12) 1px, transparent 1px)",
+          backgroundSize: "var(--grid-size) var(--grid-size)",
+          opacity: "var(--grid-opacity)",
+        }}
+      />
+      <div
+        className="absolute h-px w-[min(18rem,44vw)] transition-[background-color,box-shadow,opacity] duration-150 ease-out"
+        style={{
+          left: "clamp(1.5rem, calc(var(--lens-x) - 9rem), calc(100vw - 20rem))",
+          top: "var(--lens-y)",
+          backgroundColor: pulseKey % 2 === 0 ? "rgba(248,244,234,0.16)" : activeAccent,
+          boxShadow:
+            pulseKey % 2 === 0
+              ? "0 0 18px rgba(248,244,234,0.08)"
+              : `0 0 28px ${activeAccent}`,
+          opacity: pulseKey % 2 === 0 ? 0.55 : 0.72,
+        }}
+      />
+      {MEDIA_FRAGMENTS.map((fragment) => (
+        <MediaFragmentClip key={fragment.key} fragment={fragment} />
+      ))}
+    </>
+  );
+}
+
+interface MediaFragmentClipProps {
+  fragment: MediaFragment;
+}
+
+function MediaFragmentClip({ fragment }: MediaFragmentClipProps) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let intervalId = 0;
+
+    const playSegment = () => {
+      if (video.currentTime < fragment.startAt || video.currentTime >= fragment.endAt) {
+        video.currentTime = fragment.startAt;
+      }
+
+      void video.play().catch(() => {
+        // Browser autoplay policies can delay playback; muted inline video resumes once allowed.
+      });
+    };
+
+    const onLoadedMetadata = () => {
+      video.currentTime = fragment.startAt;
+      playSegment();
+    };
+
+    const onTimeUpdate = () => {
+      if (video.currentTime >= fragment.endAt) {
+        video.currentTime = fragment.startAt;
+      }
+    };
+
+    if (video.readyState >= 1) {
+      onLoadedMetadata();
+    } else {
+      video.addEventListener("loadedmetadata", onLoadedMetadata, { once: true });
+    }
+
+    video.addEventListener("timeupdate", onTimeUpdate);
+    intervalId = window.setInterval(playSegment, 360);
+
+    return () => {
+      window.clearInterval(intervalId);
+      video.removeEventListener("loadedmetadata", onLoadedMetadata);
+      video.removeEventListener("timeupdate", onTimeUpdate);
+    };
+  }, [fragment.endAt, fragment.startAt]);
+
+  return (
+    <div
+      className={`alchemy-media-fragment alchemy-media-fragment--${fragment.key} ${
+        fragment.key === MEDIA_FRAGMENTS[0].key ? "alchemy-media-fragment-primary" : ""
+      }`}
+      style={{
+        ...fragment.style,
+        ["--fragment-delay" as string]: fragment.delay,
+      }}
+    >
+      <video
+        ref={videoRef}
+        aria-label={fragment.label}
+        muted
+        playsInline
+        preload="metadata"
+        src={REVEAL_VIDEO_PATH}
+        style={{ objectPosition: fragment.objectPosition }}
+      />
+    </div>
   );
 }
 
