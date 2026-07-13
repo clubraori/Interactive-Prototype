@@ -9,25 +9,13 @@ const NAV_ITEMS = [
   { href: "/contact", label: "Contact" },
 ];
 
-const NOTE_COPY = {
-  about:
-    "Use this page to test whether Alchemy feels like an assembly of people before it feels like a studio.",
-  lenses:
-    "These are perspectives, not services. The titles should invite interpretation while staying concrete.",
-  works:
-    "Keep the portfolio lightweight for now. Polish and proof matter more than deep case studies.",
-  contact:
-    "The two-path contact page separates people interested in the collective from people bringing a project.",
-};
-
 const PEOPLE = [
   {
     name: "Ravin Raori",
     role: "Architect, creative producer, and interdisciplinary artist",
     siteLabel: "clubraori.com",
     siteUrl: "https://www.clubraori.com/",
-    body:
-      "Ravin works across architecture, creative production, and interdisciplinary art, with a practice shaped by technologies for performance and interaction. His work brings speculative systems, cultural formats, and public-facing experiences into contact with one another.",
+    body: "Ravin works across architecture, creative production, and interdisciplinary art, with a practice shaped by technologies for performance and interaction. His work brings speculative systems, cultural formats, and public-facing experiences into contact with one another.",
     focus: [
       "performance and interaction",
       "emerging technology",
@@ -45,8 +33,7 @@ const PEOPLE = [
     role: "Transdisciplinary producer and consultant",
     siteLabel: "medvescek.com",
     siteUrl: "https://www.medvescek.com/",
-    body:
-      "Nicholas works with creative communities to make resilient practice possible across new media, new economies, and new audiences. His practice moves between producing, program design, facilitation, partnerships, and strategic communication.",
+    body: "Nicholas works with creative communities to make resilient practice possible across new media, new economies, and new audiences. His practice moves between producing, program design, facilitation, partnerships, and strategic communication.",
     focus: [
       "creative-community strategy",
       "transdisciplinary facilitation",
@@ -64,23 +51,28 @@ const PEOPLE = [
 const LENSES = [
   {
     title: "Creative Producing",
-    definition: "Turning complex ideas into formats people can enter, use, and remember.",
+    definition:
+      "Turning complex ideas into formats people can enter, use, and remember.",
   },
   {
     title: "Public Engagement",
-    definition: "Designing encounters that make audiences feel invited into the work.",
+    definition:
+      "Designing encounters that make audiences feel invited into the work.",
   },
   {
     title: "Narrative Systems",
-    definition: "Building structures that help institutions explain what they are becoming.",
+    definition:
+      "Building structures that help institutions explain what they are becoming.",
   },
   {
     title: "Curatorial Strategy",
-    definition: "Composing people, ideas, objects, and contexts into legible public forms.",
+    definition:
+      "Composing people, ideas, objects, and contexts into legible public forms.",
   },
   {
     title: "Emerging Technology + Culture",
-    definition: "Translating new tools and speculative worlds into human cultural experiences.",
+    definition:
+      "Translating new tools and speculative worlds into human cultural experiences.",
   },
 ];
 
@@ -88,38 +80,32 @@ const WORKS = [
   {
     title: "Digital Futures",
     context: "Emerging technology, learning, and public imagination",
-    body:
-      "A lightweight case-study placeholder for work where research, facilitation, and future-facing cultural questions came together through an Alchemy lens.",
+    body: "A lightweight case-study placeholder for work where research, facilitation, and future-facing cultural questions came together through an Alchemy lens.",
   },
   {
     title: "Bond",
     context: "Creative production, public format, and shared identity",
-    body:
-      "A lightweight case-study placeholder for work that can demonstrate polish, trust, and the collective's ability to make a project feel held.",
+    body: "A lightweight case-study placeholder for work that can demonstrate polish, trust, and the collective's ability to make a project feel held.",
   },
   {
     title: "Upcoming Collaboration",
     context: "Placeholder",
-    body:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet.",
+    body: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet.",
   },
 ];
 
 const COLLECTIVE_MODEL = [
   {
     title: "Core assembly",
-    body:
-      "Alchemy currently begins with Ravin and Nicholas as a small working assembly: two practices with different vantage points, shared values, and enough overlap to build a language together.",
+    body: "Alchemy currently begins with Ravin and Nicholas as a small working assembly: two practices with different vantage points, shared values, and enough overlap to build a language together.",
   },
   {
     title: "Recurring collaborators",
-    body:
-      "The next layer can name trusted producers, artists, technologists, educators, and cultural workers who return across projects without flattening them into a single fixed team.",
+    body: "The next layer can name trusted producers, artists, technologists, educators, and cultural workers who return across projects without flattening them into a single fixed team.",
   },
   {
     title: "Year One invitation",
-    body:
-      "Before launch, the collective needs a clear invitation for people who may become network, family, or project-specific members of the Alchemy ecology.",
+    body: "Before launch, the collective needs a clear invitation for people who may become network, family, or project-specific members of the Alchemy ecology.",
   },
 ];
 
@@ -127,13 +113,11 @@ function PageShell({
   eyebrow,
   title,
   intro,
-  noteKey,
   children,
 }: {
   eyebrow: string;
   title: string;
   intro: string;
-  noteKey: keyof typeof NOTE_COPY;
   children: ReactNode;
 }) {
   const [location] = useLocation();
@@ -144,7 +128,9 @@ function PageShell({
         <div className="mx-auto flex max-w-6xl flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <Link href="/" className="flex items-center gap-3">
             <span className="h-3 w-3 bg-[#ff6737]" />
-            <span className="text-[0.92rem] font-semibold">Alchemy Unlimited</span>
+            <span className="text-[0.92rem] font-semibold">
+              Alchemy Unlimited
+            </span>
           </Link>
           <nav className="flex w-full flex-wrap items-center justify-start gap-x-4 gap-y-2 sm:w-auto sm:justify-end md:gap-x-5">
             {NAV_ITEMS.map((item) => {
@@ -164,7 +150,7 @@ function PageShell({
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-6xl gap-10 px-5 py-12 md:px-10 md:py-16 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <section className="mx-auto max-w-6xl px-5 py-12 md:px-10 md:py-16">
         <div>
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-[#72695d]">
             {eyebrow}
@@ -176,19 +162,11 @@ function PageShell({
             {intro}
           </p>
         </div>
-
-        <aside className="h-fit border border-[#7c6828]/20 bg-[#fce591] p-5 shadow-[0_18px_38px_rgba(73,60,18,0.12)]">
-          <div className="mx-auto mb-4 h-5 w-24 rounded-[3px] bg-[#f7ecc0]" />
-          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#675c35]">
-            Studio note
-          </p>
-          <p className="mt-4 text-[0.88rem] leading-[1.62] text-[#3d3729]">
-            {NOTE_COPY[noteKey]}
-          </p>
-        </aside>
       </section>
 
-      <section className="mx-auto max-w-6xl px-5 pb-16 md:px-10">{children}</section>
+      <section className="mx-auto max-w-6xl px-5 pb-80 md:px-10 lg:pb-16">
+        {children}
+      </section>
     </main>
   );
 }
@@ -199,11 +177,13 @@ export function AboutPage() {
       eyebrow="About"
       title="A collection of humans."
       intro="Alchemy is being shaped by Ravin Raori and Nicholas Medvescek as a small assembly of creative producers, artists, strategists, and recurring collaborators. The point is not to look like a fixed agency too quickly, but to make the human structure of the work legible."
-      noteKey="about"
     >
       <div className="grid gap-px bg-[#151311]/12 md:grid-cols-2">
         {PEOPLE.map((person) => (
-          <article key={person.name} className="min-h-[30rem] bg-[#fffaf0] p-6 md:p-8">
+          <article
+            key={person.name}
+            className="min-h-[30rem] bg-[#fffaf0] p-6 md:p-8"
+          >
             <div className="flex items-start justify-between gap-6">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#786f63]">
                 Founder
@@ -233,7 +213,10 @@ export function AboutPage() {
                 </p>
                 <ul className="mt-4 space-y-2">
                   {person.focus.map((item) => (
-                    <li key={item} className="text-[0.95rem] leading-snug text-[#151311]">
+                    <li
+                      key={item}
+                      className="text-[0.95rem] leading-snug text-[#151311]"
+                    >
                       {item}
                     </li>
                   ))}
@@ -245,7 +228,10 @@ export function AboutPage() {
                 </p>
                 <ul className="mt-4 space-y-2">
                   {person.signals.map((item) => (
-                    <li key={item} className="text-[0.95rem] leading-snug text-[#151311]">
+                    <li
+                      key={item}
+                      className="text-[0.95rem] leading-snug text-[#151311]"
+                    >
                       {item}
                     </li>
                   ))}
@@ -262,9 +248,9 @@ export function AboutPage() {
             What sits between them
           </p>
           <p className="mt-4 max-w-xl text-[1.18rem] leading-[1.62] tracking-normal text-[#151311]">
-            Alchemy lives in the overlap: public-facing cultural formats, creative
-            capital, emerging technology, participatory systems, and the translation
-            work needed to make new practices feel usable.
+            Alchemy lives in the overlap: public-facing cultural formats,
+            creative capital, emerging technology, participatory systems, and
+            the translation work needed to make new practices feel usable.
           </p>
         </div>
         <div className="grid gap-px bg-[#151311]/12 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
@@ -290,11 +276,13 @@ export function LensesPage() {
       eyebrow="Lenses"
       title="Ways of seeing creative challenges."
       intro="The lenses frame Alchemy's capabilities as perspectives rather than services. Each one should be broad enough to invite interpretation and specific enough to feel usable."
-      noteKey="lenses"
     >
       <div className="grid gap-px bg-[#151311]/12 md:grid-cols-2 lg:grid-cols-3">
         {LENSES.map((lens, index) => (
-          <article key={lens.title} className="min-h-[20rem] bg-[#fffaf0] p-6 md:p-7">
+          <article
+            key={lens.title}
+            className="min-h-[20rem] bg-[#fffaf0] p-6 md:p-7"
+          >
             <p className="text-[0.78rem] font-semibold tracking-normal text-[#151311]">
               0{index + 1}
             </p>
@@ -305,8 +293,8 @@ export function LensesPage() {
               {lens.definition}
             </p>
             <p className="mt-5 text-[0.86rem] leading-[1.62] text-[#7a7165]">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere
-              erat a ante venenatis dapibus posuere velit aliquet.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
+              posuere erat a ante venenatis dapibus posuere velit aliquet.
             </p>
           </article>
         ))}
@@ -316,14 +304,15 @@ export function LensesPage() {
 }
 
 export function WorksPage() {
-  const [activeWork, setActiveWork] = useState<(typeof WORKS)[number] | null>(null);
+  const [activeWork, setActiveWork] = useState<(typeof WORKS)[number] | null>(
+    null,
+  );
 
   return (
     <PageShell
       eyebrow="Works"
       title="Proof without over-explaining."
       intro="This is a lightweight portfolio layer for now: polished project cards and a simple lightbox, with deeper case studies deferred until the content is ready."
-      noteKey="works"
     >
       <div className="grid gap-px bg-[#151311]/12 md:grid-cols-3">
         {WORKS.map((work) => (
@@ -383,7 +372,6 @@ export function ContactPage() {
       eyebrow="Contact"
       title="Two ways into the conversation."
       intro="The contact page separates people who are interested in the collective from people bringing a project, so the first exchange can be clearer."
-      noteKey="contact"
     >
       <div className="grid gap-px bg-[#151311]/12 md:grid-cols-2">
         <article className="min-h-[22rem] bg-[#fffaf0] p-6 md:p-8">
@@ -394,8 +382,9 @@ export function ContactPage() {
             Interested in the collective.
           </h2>
           <p className="mt-5 max-w-md text-[1rem] leading-[1.66] text-[#4e473f]">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. This route can
-            become the invitation for collaborators, members, and network/family roles.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. This route
+            can become the invitation for collaborators, members, and
+            network/family roles.
           </p>
         </article>
 
@@ -407,8 +396,9 @@ export function ContactPage() {
             Interested in a project.
           </h2>
           <p className="mt-5 max-w-md text-[1rem] leading-[1.66] text-[#4e473f]">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. This route can
-            become the entry point for commissions, partnerships, and project inquiries.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. This route
+            can become the entry point for commissions, partnerships, and
+            project inquiries.
           </p>
         </article>
       </div>

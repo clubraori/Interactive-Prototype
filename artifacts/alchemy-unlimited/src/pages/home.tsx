@@ -4,7 +4,6 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
   type RefObject,
   type ReactNode,
 } from "react";
@@ -25,26 +24,9 @@ interface LockState {
   why: string | null;
 }
 
-interface NotePosition {
-  x: number;
-  y: number;
-}
-
-interface NoteSurfaceState {
-  rotateX: number;
-  rotateY: number;
-  rotateZ: number;
-  scale: number;
-  shadowX: number;
-  shadowY: number;
-  shadowBlur: number;
-}
-
 interface MenuSectionContent {
   key: MenuSectionKey;
   label: string;
-  eyebrow: string;
-  body: string;
 }
 
 interface MediaFragment {
@@ -126,8 +108,6 @@ const BRAND_GRADIENT_MOODS: GradientMood[] = [
 const X_STEP_PX = 190;
 const Y_STEP_PX = 150;
 const CHANGE_COOLDOWN_MS = 1800;
-const DESKTOP_NOTE_BREAKPOINT = 1024;
-const NOTE_EDGE_PADDING = 24;
 const REVEAL_VIDEO_PATH = `${import.meta.env.BASE_URL}kaleidoscope-reveal.mp4`;
 const MEDIA_FRAGMENTS: MediaFragment[] = [
   {
@@ -179,50 +159,23 @@ const MISSION_LINE_GAP_EM = 0.2;
 const MISSION_INTRO_LINE = "An assembly of creative producers specializing in";
 const MISSION_WORKING_LINE = "working toward";
 const MISSION_ANCHOR_WORD = "for";
-const STUDIO_NOTE_STORAGE_KEY = "alchemy-audience-studio-note";
-const STUDIO_NOTE_PLACEHOLDER =
-  "Write what you notice, want to keep, or might bring into the room.";
-const STUDIO_NOTE_EXPORT_WIDTH = 900;
-const STUDIO_NOTE_EXPORT_HEIGHT = 1200;
-
-const DEFAULT_NOTE_SURFACE: NoteSurfaceState = {
-  rotateX: -2,
-  rotateY: 4,
-  rotateZ: -2.2,
-  scale: 1,
-  shadowX: 0,
-  shadowY: 18,
-  shadowBlur: 36,
-};
 
 const MENU_SECTIONS: MenuSectionContent[] = [
   {
     key: "about",
     label: "About",
-    eyebrow: "Alchemy Unlimited",
-    body:
-      "A strategy-led creative studio building participatory systems, public-facing formats, and narrative structures for culture, learning, and emerging technology.",
   },
   {
     key: "lenses",
     label: "Lenses",
-    eyebrow: "Multiple ways of seeing",
-    body:
-      "The page behaves like the practice: a field of lenses, filters, and layered readings that turn one set of material into many possible forms.",
   },
   {
     key: "works",
     label: "Works",
-    eyebrow: "Lightweight portfolio",
-    body:
-      "A proof layer for projects where the work begins to read as Alchemy: polished, verifiable, and open enough for lightweight case-study treatment.",
   },
   {
     key: "contact",
     label: "Contact",
-    eyebrow: "Outside perspective",
-    body:
-      "Regular third-party conversations help test whether Alchemy is legible beyond the collaboration and reveal what the work is asking to become.",
   },
 ];
 
@@ -270,12 +223,6 @@ export default function Home() {
   const hasExplored = useRef(false);
   const rafRef = useRef<number | null>(null);
   const motionLayerRef = useRef<HTMLDivElement | null>(null);
-  const stickyNoteRef = useRef<HTMLDivElement | null>(null);
-  const stickyNoteDragRef = useRef({
-    active: false,
-    offsetX: 0,
-    offsetY: 0,
-  });
   const previousValuesRef = useRef<VariableState>({
     whatHow: 0,
     who: 1,
@@ -296,76 +243,30 @@ export default function Home() {
     why: null,
   });
   const [accentIndex, setAccentIndex] = useState(0);
-  const [activeMenuSection, setActiveMenuSection] = useState<MenuSectionKey>("about");
-  const [isDesktopNote, setIsDesktopNote] = useState(false);
-  const [isDraggingNote, setIsDraggingNote] = useState(false);
-  const [stickyNotePosition, setStickyNotePosition] = useState<NotePosition>({
-    x: 0,
-    y: 112,
-  });
-  const [stickyNoteSurface, setStickyNoteSurface] =
-    useState<NoteSurfaceState>(DEFAULT_NOTE_SURFACE);
+  const [activeMenuSection, setActiveMenuSection] =
+    useState<MenuSectionKey>("about");
 
-  const updateMotionVariables = useCallback((normalisedX: number, normalisedY: number) => {
-    const x = Math.max(0, Math.min(1, normalisedX));
-    const y = Math.max(0, Math.min(1, normalisedY));
-    const layer = motionLayerRef.current;
-    if (!layer) return;
+  const updateMotionVariables = useCallback(
+    (normalisedX: number, normalisedY: number) => {
+      const x = Math.max(0, Math.min(1, normalisedX));
+      const y = Math.max(0, Math.min(1, normalisedY));
+      const layer = motionLayerRef.current;
+      if (!layer) return;
 
-    const mood = gradientMoodForY(y);
+      const mood = gradientMoodForY(y);
 
-    layer.style.setProperty("--gradient-start", rgbVariable(mood.start));
-    layer.style.setProperty("--gradient-mid", rgbVariable(mood.mid));
-    layer.style.setProperty("--gradient-end", rgbVariable(mood.end));
-    layer.style.setProperty("--gradient-y", `${18 + y * 64}%`);
-    layer.style.setProperty("--pixel-size", `${Math.round(18 - x * 11)}px`);
-    layer.style.setProperty("--pixel-opacity", `${0.022 + x * 0.06}`);
-    layer.style.setProperty("--fragment-saturate", `${0.26 + y * 0.12}`);
-    layer.style.setProperty("--fragment-brightness", `${0.9 + x * 0.08}`);
-    layer.style.setProperty("--fragment-contrast", `${0.82 + x * 0.1}`);
-  }, []);
-
-  const clampStickyNotePosition = useCallback((position: NotePosition): NotePosition => {
-    if (typeof window === "undefined") return position;
-
-    const noteRect = stickyNoteRef.current?.getBoundingClientRect();
-    const noteWidth = noteRect?.width ?? 288;
-    const noteHeight = noteRect?.height ?? 360;
-    const maxX = Math.max(NOTE_EDGE_PADDING, window.innerWidth - noteWidth - NOTE_EDGE_PADDING);
-    const maxY = Math.max(NOTE_EDGE_PADDING, window.innerHeight - noteHeight - NOTE_EDGE_PADDING);
-
-    return {
-      x: Math.min(Math.max(position.x, NOTE_EDGE_PADDING), maxX),
-      y: Math.min(Math.max(position.y, NOTE_EDGE_PADDING), maxY),
-    };
-  }, []);
-
-  const updateStickyNoteSurface = useCallback(
-    (clientX: number, clientY: number, dragging = false) => {
-      const rect = stickyNoteRef.current?.getBoundingClientRect();
-      if (!rect) return;
-
-      const normalisedX = ((clientX - rect.left) / rect.width) * 2 - 1;
-      const normalisedY = ((clientY - rect.top) / rect.height) * 2 - 1;
-      const clampedX = Math.max(-1, Math.min(1, normalisedX));
-      const clampedY = Math.max(-1, Math.min(1, normalisedY));
-
-      setStickyNoteSurface({
-        rotateX: -clampedY * (dragging ? 10 : 6),
-        rotateY: clampedX * (dragging ? 11 : 7),
-        rotateZ: clampedX * (dragging ? 3.2 : 1.8) - 1.5,
-        scale: dragging ? 1.018 : 1.006,
-        shadowX: clampedX * (dragging ? 28 : 18),
-        shadowY: 18 + clampedY * (dragging ? 16 : 10),
-        shadowBlur: dragging ? 44 : 34,
-      });
+      layer.style.setProperty("--gradient-start", rgbVariable(mood.start));
+      layer.style.setProperty("--gradient-mid", rgbVariable(mood.mid));
+      layer.style.setProperty("--gradient-end", rgbVariable(mood.end));
+      layer.style.setProperty("--gradient-y", `${18 + y * 64}%`);
+      layer.style.setProperty("--pixel-size", `${Math.round(18 - x * 11)}px`);
+      layer.style.setProperty("--pixel-opacity", `${0.022 + x * 0.06}`);
+      layer.style.setProperty("--fragment-saturate", `${0.26 + y * 0.12}`);
+      layer.style.setProperty("--fragment-brightness", `${0.9 + x * 0.08}`);
+      layer.style.setProperty("--fragment-contrast", `${0.82 + x * 0.1}`);
     },
     [],
   );
-
-  const resetStickyNoteSurface = useCallback(() => {
-    setStickyNoteSurface(DEFAULT_NOTE_SURFACE);
-  }, []);
 
   const updateActiveValues = useCallback(() => {
     const viewportWidth = Math.max(viewportRef.current.width, 1);
@@ -387,7 +288,9 @@ export default function Home() {
       why: positiveMod(bucketX * 2 + bucketY * 3, VALUE_BANKS.why.length),
     };
     const previous = previousValuesRef.current;
-    const changed = CATEGORY_ORDER.some((category) => next[category] !== previous[category]);
+    const changed = CATEGORY_ORDER.some(
+      (category) => next[category] !== previous[category],
+    );
 
     if (changed) {
       previousValuesRef.current = next;
@@ -431,13 +334,6 @@ export default function Home() {
       y: Math.floor((smoothY.current * window.innerHeight) / Y_STEP_PX),
     };
     updateMotionVariables(targetX.current, targetY.current);
-    setIsDesktopNote(window.innerWidth >= DESKTOP_NOTE_BREAKPOINT);
-    setStickyNotePosition(
-      clampStickyNotePosition({
-        x: window.innerWidth - 330,
-        y: 118,
-      }),
-    );
 
     const onResize = () => {
       viewportRef.current = {
@@ -448,17 +344,6 @@ export default function Home() {
         x: Math.floor((smoothX.current * window.innerWidth) / X_STEP_PX),
         y: Math.floor((smoothY.current * window.innerHeight) / Y_STEP_PX),
       };
-      setIsDesktopNote(window.innerWidth >= DESKTOP_NOTE_BREAKPOINT);
-      setStickyNotePosition((current) =>
-        clampStickyNotePosition(
-          current.x === 0
-            ? {
-                x: window.innerWidth - 330,
-                y: 118,
-              }
-            : current,
-        ),
-      );
     };
 
     const onMove = (event: MouseEvent) => {
@@ -486,50 +371,7 @@ export default function Home() {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("touchmove", onTouchMove);
     };
-  }, [clampStickyNotePosition, updateMotionVariables]);
-
-  useEffect(() => {
-    if (!isDesktopNote) {
-      stickyNoteDragRef.current.active = false;
-      setIsDraggingNote(false);
-      resetStickyNoteSurface();
-      return;
-    }
-
-    const onPointerMove = (event: PointerEvent) => {
-      if (!stickyNoteDragRef.current.active) return;
-
-      const nextPosition = clampStickyNotePosition({
-        x: event.clientX - stickyNoteDragRef.current.offsetX,
-        y: event.clientY - stickyNoteDragRef.current.offsetY,
-      });
-
-      setStickyNotePosition(nextPosition);
-      updateStickyNoteSurface(event.clientX, event.clientY, true);
-    };
-
-    const endDrag = () => {
-      if (!stickyNoteDragRef.current.active) return;
-      stickyNoteDragRef.current.active = false;
-      setIsDraggingNote(false);
-      resetStickyNoteSurface();
-    };
-
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", endDrag);
-    window.addEventListener("pointercancel", endDrag);
-
-    return () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", endDrag);
-      window.removeEventListener("pointercancel", endDrag);
-    };
-  }, [
-    clampStickyNotePosition,
-    isDesktopNote,
-    resetStickyNoteSurface,
-    updateStickyNoteSurface,
-  ]);
+  }, [updateMotionVariables]);
 
   const activeAccent = ACCENT_COLORS[accentIndex];
   const currentValues = {
@@ -543,19 +385,6 @@ export default function Home() {
       ...current,
       [category]: current[category] === value ? null : value,
     }));
-  };
-
-  const startStickyNoteDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!isDesktopNote || !stickyNoteRef.current) return;
-
-    const rect = stickyNoteRef.current.getBoundingClientRect();
-    stickyNoteDragRef.current = {
-      active: true,
-      offsetX: event.clientX - rect.left,
-      offsetY: event.clientY - rect.top,
-    };
-    setIsDraggingNote(true);
-    updateStickyNoteSurface(event.clientX, event.clientY, true);
   };
 
   return (
@@ -588,7 +417,10 @@ export default function Home() {
         <header className="flex items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <span className="h-3 w-3 bg-[#ff6737]" />
-            <Link href="/" className="text-[0.92rem] font-semibold text-[#211d17]">
+            <Link
+              href="/"
+              className="text-[0.92rem] font-semibold text-[#211d17]"
+            >
               Alchemy Unlimited
             </Link>
           </div>
@@ -615,7 +447,7 @@ export default function Home() {
           </nav>
         </header>
 
-        <section className="grid min-w-0 flex-1 items-center gap-10 py-14 lg:grid-cols-[minmax(0,1fr)_18rem] lg:py-12">
+        <section className="grid min-w-0 flex-1 items-center gap-10 py-14 lg:py-12">
           <div className="w-full min-w-0 max-w-[58rem] lg:-translate-y-16 xl:-translate-y-20">
             <p className="mb-5 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[rgba(33,29,23,0.52)]">
               Mission
@@ -629,44 +461,8 @@ export default function Home() {
               onToggleLock={toggleLock}
             />
           </div>
-
-          <div className="lg:hidden">
-            <AudienceNoteCard />
-          </div>
         </section>
       </div>
-
-      {isDesktopNote ? (
-        <div
-          ref={stickyNoteRef}
-          className="fixed z-20 hidden w-[18rem] select-none lg:block"
-          style={{
-            left: stickyNotePosition.x,
-            top: stickyNotePosition.y,
-            transform: `perspective(1400px) rotateX(${stickyNoteSurface.rotateX}deg) rotateY(${stickyNoteSurface.rotateY}deg) rotateZ(${stickyNoteSurface.rotateZ}deg) scale(${stickyNoteSurface.scale})`,
-            transformStyle: "preserve-3d",
-            filter: isDraggingNote ? "saturate(1.04)" : "none",
-          }}
-          onPointerEnter={(event) =>
-            updateStickyNoteSurface(event.clientX, event.clientY, isDraggingNote)
-          }
-          onPointerMove={(event) => {
-            if (isDraggingNote) return;
-            updateStickyNoteSurface(event.clientX, event.clientY, false);
-          }}
-          onPointerLeave={() => {
-            if (isDraggingNote) return;
-            resetStickyNoteSurface();
-          }}
-        >
-          <AudienceNoteCard
-            onDragHandlePointerDown={startStickyNoteDrag}
-            shadowStyle={{
-              boxShadow: `${stickyNoteSurface.shadowX}px ${stickyNoteSurface.shadowY}px ${stickyNoteSurface.shadowBlur}px rgba(73, 60, 18, 0.24), 0 14px 24px rgba(20, 16, 10, 0.16)`,
-            }}
-          />
-        </div>
-      ) : null}
     </main>
   );
 }
@@ -725,7 +521,10 @@ function MediaFragmentClip({ fragment }: MediaFragmentClipProps) {
     let intervalId = 0;
 
     const playSegment = () => {
-      if (video.currentTime < fragment.startAt || video.currentTime >= fragment.endAt) {
+      if (
+        video.currentTime < fragment.startAt ||
+        video.currentTime >= fragment.endAt
+      ) {
         video.currentTime = fragment.startAt;
       }
 
@@ -748,7 +547,9 @@ function MediaFragmentClip({ fragment }: MediaFragmentClipProps) {
     if (video.readyState >= 1) {
       onLoadedMetadata();
     } else {
-      video.addEventListener("loadedmetadata", onLoadedMetadata, { once: true });
+      video.addEventListener("loadedmetadata", onLoadedMetadata, {
+        once: true,
+      });
     }
 
     video.addEventListener("timeupdate", onTimeUpdate);
@@ -764,7 +565,9 @@ function MediaFragmentClip({ fragment }: MediaFragmentClipProps) {
   return (
     <div
       className={`alchemy-media-fragment alchemy-media-fragment--${fragment.key} ${
-        fragment.key === MEDIA_FRAGMENTS[0].key ? "alchemy-media-fragment-primary" : ""
+        fragment.key === MEDIA_FRAGMENTS[0].key
+          ? "alchemy-media-fragment-primary"
+          : ""
       }`}
       style={{
         ...fragment.style,
@@ -782,283 +585,6 @@ function MediaFragmentClip({ fragment }: MediaFragmentClipProps) {
       />
     </div>
   );
-}
-
-interface AudienceNoteCardProps {
-  onDragHandlePointerDown?: (event: ReactPointerEvent<HTMLDivElement>) => void;
-  shadowStyle?: CSSProperties;
-}
-
-interface SketchPoint {
-  x: number;
-  y: number;
-}
-
-function AudienceNoteCard({
-  onDragHandlePointerDown,
-  shadowStyle,
-}: AudienceNoteCardProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const isDrawingRef = useRef(false);
-  const lastPointRef = useRef<SketchPoint | null>(null);
-  const [noteText, setNoteText] = useState(() =>
-    typeof window === "undefined"
-      ? ""
-      : window.localStorage.getItem(STUDIO_NOTE_STORAGE_KEY) ?? "",
-  );
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STUDIO_NOTE_STORAGE_KEY, noteText);
-  }, [noteText]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resizeCanvas = () => {
-      const rect = canvas.getBoundingClientRect();
-      const scale = window.devicePixelRatio || 1;
-      canvas.width = Math.max(1, Math.floor(rect.width * scale));
-      canvas.height = Math.max(1, Math.floor(rect.height * scale));
-
-      const context = canvas.getContext("2d");
-      if (!context) return;
-      context.setTransform(scale, 0, 0, scale, 0, 0);
-      context.lineCap = "round";
-      context.lineJoin = "round";
-      context.strokeStyle = "#211d17";
-      context.lineWidth = 2;
-    };
-
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
-    return () => window.removeEventListener("resize", resizeCanvas);
-  }, []);
-
-  const pointFromEvent = (event: ReactPointerEvent<HTMLCanvasElement>): SketchPoint => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
-  };
-
-  const beginSketch = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    isDrawingRef.current = true;
-    lastPointRef.current = pointFromEvent(event);
-  };
-
-  const drawSketch = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawingRef.current) return;
-    event.preventDefault();
-
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext("2d");
-    const previous = lastPointRef.current;
-    const next = pointFromEvent(event);
-    if (!context || !previous) return;
-
-    context.beginPath();
-    context.moveTo(previous.x, previous.y);
-    context.lineTo(next.x, next.y);
-    context.stroke();
-    lastPointRef.current = next;
-  };
-
-  const endSketch = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawingRef.current) return;
-    event.preventDefault();
-    isDrawingRef.current = false;
-    lastPointRef.current = null;
-    event.currentTarget.releasePointerCapture(event.pointerId);
-  };
-
-  const clearSketch = () => {
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext("2d");
-    if (!canvas || !context) return;
-
-    context.save();
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.restore();
-  };
-
-  const resetNote = () => {
-    setNoteText("");
-    clearSketch();
-  };
-
-  const downloadNote = () => {
-    if (typeof document === "undefined") return;
-
-    const exportCanvas = document.createElement("canvas");
-    exportCanvas.width = STUDIO_NOTE_EXPORT_WIDTH;
-    exportCanvas.height = STUDIO_NOTE_EXPORT_HEIGHT;
-    const context = exportCanvas.getContext("2d");
-    if (!context) return;
-
-    context.fillStyle = "#fce591";
-    context.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-    context.fillStyle = "rgba(247, 236, 192, 0.92)";
-    context.fillRect(330, 48, 240, 58);
-    context.strokeStyle = "rgba(124, 104, 40, 0.28)";
-    context.lineWidth = 3;
-    context.strokeRect(0, 0, exportCanvas.width, exportCanvas.height);
-
-    context.fillStyle = "#675c35";
-    context.font = "700 28px Inter, Helvetica, Arial, sans-serif";
-    context.fillText("ALCHEMY STUDIO NOTE", 72, 178);
-
-    context.fillStyle = "#211d17";
-    context.font = "700 48px Inter, Helvetica, Arial, sans-serif";
-    context.fillText("What I am taking with me", 72, 268);
-
-    context.font = "400 34px Inter, Helvetica, Arial, sans-serif";
-    wrapCanvasText(
-      context,
-      noteText.trim() || STUDIO_NOTE_PLACEHOLDER,
-      72,
-      350,
-      exportCanvas.width - 144,
-      52,
-      11,
-    );
-
-    const sketchCanvas = canvasRef.current;
-    if (sketchCanvas) {
-      context.fillStyle = "rgba(255, 250, 240, 0.42)";
-      context.fillRect(72, 760, exportCanvas.width - 144, 300);
-      context.drawImage(sketchCanvas, 72, 760, exportCanvas.width - 144, 300);
-    }
-
-    context.fillStyle = "#675c35";
-    context.font = "600 24px Inter, Helvetica, Arial, sans-serif";
-    context.fillText("clubraori.github.io/Interactive-Prototype", 72, 1120);
-
-    const link = document.createElement("a");
-    link.href = exportCanvas.toDataURL("image/png");
-    link.download = "alchemy-studio-note.png";
-    link.click();
-  };
-
-  return (
-    <div
-      data-testid="sticky-note"
-      className="relative border border-[rgba(124,104,40,0.16)] bg-[rgba(252,229,145,0.96)] p-4 text-[#2d271d] backdrop-blur-sm md:p-5"
-      style={{
-        boxShadow: "0 16px 30px rgba(20, 16, 10, 0.18)",
-        ...shadowStyle,
-      }}
-    >
-      <span className="absolute left-1/2 top-3 h-5 w-24 -translate-x-1/2 rounded-[3px] bg-[rgba(247,236,192,0.78)] shadow-[0_1px_2px_rgba(112,96,44,0.08)]" />
-      <div
-        className={`mb-4 flex items-center justify-between pt-4 ${
-          onDragHandlePointerDown ? "cursor-grab touch-none active:cursor-grabbing" : ""
-        }`}
-        onPointerDown={onDragHandlePointerDown}
-      >
-        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#675c35]">
-          Studio note
-        </p>
-        <span className="text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-[#8f8256]">
-          yours
-        </span>
-      </div>
-
-      <div className="mt-5 border-t border-[rgba(124,104,40,0.16)] pt-4">
-        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#877b55]">
-          Field note
-        </p>
-        <textarea
-          value={noteText}
-          onChange={(event) => setNoteText(event.target.value)}
-          placeholder={STUDIO_NOTE_PLACEHOLDER}
-          className="mt-3 min-h-[7.5rem] w-full resize-none border border-[rgba(103,92,53,0.18)] bg-[rgba(255,250,240,0.36)] px-3 py-2 text-[0.86rem] leading-[1.5] text-[#211d17] outline-none transition-colors duration-150 placeholder:text-[#887a50] focus:border-[rgba(198,83,36,0.48)] focus:bg-[rgba(255,250,240,0.54)]"
-        />
-      </div>
-
-      <div className="mt-4">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#877b55]">
-            Sketch
-          </p>
-          <button
-            type="button"
-            onClick={clearSketch}
-            className="text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[#675c35] transition-colors duration-150 hover:text-[#c65324]"
-          >
-            Clear sketch
-          </button>
-        </div>
-        <canvas
-          ref={canvasRef}
-          aria-label="Sketch on your studio note"
-          className="h-[7.25rem] w-full touch-none border border-[rgba(103,92,53,0.18)] bg-[rgba(255,250,240,0.32)]"
-          onPointerDown={beginSketch}
-          onPointerMove={drawSketch}
-          onPointerUp={endSketch}
-          onPointerCancel={endSketch}
-          onPointerLeave={endSketch}
-        />
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={resetNote}
-          className="border border-[rgba(103,92,53,0.18)] bg-[rgba(255,250,240,0.24)] px-3 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[#675c35] transition-colors duration-150 hover:bg-[rgba(255,250,240,0.5)]"
-        >
-          Reset
-        </button>
-        <button
-          type="button"
-          onClick={downloadNote}
-          className="border border-[#c65324] bg-[#c65324] px-3 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[#fffaf0] transition-colors duration-150 hover:border-[#211d17] hover:bg-[#211d17]"
-        >
-          Download
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function wrapCanvasText(
-  context: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  maxWidth: number,
-  lineHeight: number,
-  maxLines: number,
-) {
-  const words = text.split(/\s+/).filter(Boolean);
-  let line = "";
-  let lineCount = 0;
-
-  words.forEach((word, index) => {
-    if (lineCount >= maxLines) return;
-
-    const testLine = line ? `${line} ${word}` : word;
-    const width = context.measureText(testLine).width;
-    const isLastWord = index === words.length - 1;
-
-    if (width > maxWidth && line) {
-      context.fillText(line, x, y + lineCount * lineHeight);
-      line = word;
-      lineCount += 1;
-    } else {
-      line = testLine;
-    }
-
-    if (isLastWord && lineCount < maxLines) {
-      context.fillText(line, x, y + lineCount * lineHeight);
-      lineCount += 1;
-    }
-  });
 }
 
 interface TypedSlotProps {
@@ -1096,7 +622,10 @@ function TypedSlot({
     let prefixLength = 0;
     const limit = Math.min(current.length, text.length);
 
-    while (prefixLength < limit && current[prefixLength] === text[prefixLength]) {
+    while (
+      prefixLength < limit &&
+      current[prefixLength] === text[prefixLength]
+    ) {
       prefixLength += 1;
     }
 
@@ -1155,7 +684,11 @@ function TypedSlot({
   );
 }
 
-function useMissionFontSize(whatHowText: string, whoText: string, whyText: string) {
+function useMissionFontSize(
+  whatHowText: string,
+  whoText: string,
+  whyText: string,
+) {
   const containerRef = useRef<HTMLHeadingElement | null>(null);
   const introMeasureRef = useRef<HTMLSpanElement | null>(null);
   const whatHowMeasureRef = useRef<HTMLSpanElement | null>(null);
@@ -1218,7 +751,9 @@ function useMissionFontSize(whatHowText: string, whoText: string, whyText: strin
     scheduleUpdate();
 
     const observer =
-      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleUpdate);
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(scheduleUpdate);
     observer?.observe(container);
     window.addEventListener("resize", scheduleUpdate);
 
@@ -1294,11 +829,19 @@ function StatementParagraph({
       className="relative flex w-[calc(100vw_-_2.5rem)] max-w-[42rem] flex-col items-start text-left font-semibold leading-[1.04] text-[#211d17] sm:w-[calc(100vw_-_3.5rem)] md:w-full"
       style={{ fontSize: `${fontSize}px`, gap: `${MISSION_LINE_GAP_EM}em` }}
     >
-      <MeasurementText measureRef={introMeasureRef}>{MISSION_INTRO_LINE}</MeasurementText>
-      <MeasurementText measureRef={whatHowMeasureRef}>{whatHow}</MeasurementText>
-      <MeasurementText measureRef={anchorMeasureRef}>{MISSION_ANCHOR_WORD}</MeasurementText>
+      <MeasurementText measureRef={introMeasureRef}>
+        {MISSION_INTRO_LINE}
+      </MeasurementText>
+      <MeasurementText measureRef={whatHowMeasureRef}>
+        {whatHow}
+      </MeasurementText>
+      <MeasurementText measureRef={anchorMeasureRef}>
+        {MISSION_ANCHOR_WORD}
+      </MeasurementText>
       <MeasurementText measureRef={whoMeasureRef}>{who},</MeasurementText>
-      <MeasurementText measureRef={workingMeasureRef}>{MISSION_WORKING_LINE}</MeasurementText>
+      <MeasurementText measureRef={workingMeasureRef}>
+        {MISSION_WORKING_LINE}
+      </MeasurementText>
       <MeasurementText measureRef={whyMeasureRef}>{why}.</MeasurementText>
       <span className="block whitespace-nowrap">{MISSION_INTRO_LINE}</span>
       <span className="block whitespace-nowrap">
@@ -1310,9 +853,7 @@ function StatementParagraph({
           onToggleLock={onToggleLock}
         />
       </span>
-      <span className="block whitespace-nowrap">
-        {MISSION_ANCHOR_WORD}
-      </span>
+      <span className="block whitespace-nowrap">{MISSION_ANCHOR_WORD}</span>
       <span className="block whitespace-nowrap">
         <TypedSlot
           text={who}
@@ -1323,9 +864,7 @@ function StatementParagraph({
         />
         {","}
       </span>
-      <span className="block whitespace-nowrap">
-        {MISSION_WORKING_LINE}
-      </span>
+      <span className="block whitespace-nowrap">{MISSION_WORKING_LINE}</span>
       <span className="block whitespace-nowrap">
         <TypedSlot
           text={why}

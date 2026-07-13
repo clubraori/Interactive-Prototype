@@ -1,7 +1,13 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
-import { AboutPage, ContactPage, LensesPage, WorksPage } from "@/pages/site-pages";
+import {
+  AboutPage,
+  ContactPage,
+  LensesPage,
+  WorksPage,
+} from "@/pages/site-pages";
+import { AudienceStudioNote } from "@/components/audience-studio-note";
 
 function Router() {
   return (
@@ -20,6 +26,7 @@ function App() {
   return (
     <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
       <Router />
+      <AudienceStudioNote />
     </WouterRouter>
   );
 }
