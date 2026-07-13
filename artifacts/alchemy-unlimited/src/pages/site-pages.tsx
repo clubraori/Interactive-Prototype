@@ -23,13 +23,41 @@ const NOTE_COPY = {
 const PEOPLE = [
   {
     name: "Ravin Raori",
-    role: "Creative producer, artist, and strategy lead",
-    linkLabel: "ravinraori.com",
+    role: "Architect, creative producer, and interdisciplinary artist",
+    siteLabel: "clubraori.com",
+    siteUrl: "https://www.clubraori.com/",
+    body:
+      "Ravin works across architecture, creative production, and interdisciplinary art, with a practice shaped by technologies for performance and interaction. His work brings speculative systems, cultural formats, and public-facing experiences into contact with one another.",
+    focus: [
+      "performance and interaction",
+      "emerging technology",
+      "spatial and cultural systems",
+      "public imagination",
+    ],
+    signals: [
+      "Counterproductive",
+      "Bauhaus Recoded at Tate Britain",
+      "Motor City - Digital Materiality",
+    ],
   },
   {
-    name: "Nick",
-    role: "Creative producer, collaborator, and cultural strategist",
-    linkLabel: "Individual site placeholder",
+    name: "Nicholas Medvescek",
+    role: "Transdisciplinary producer and consultant",
+    siteLabel: "medvescek.com",
+    siteUrl: "https://www.medvescek.com/",
+    body:
+      "Nicholas works with creative communities to make resilient practice possible across new media, new economies, and new audiences. His practice moves between producing, program design, facilitation, partnerships, and strategic communication.",
+    focus: [
+      "creative-community strategy",
+      "transdisciplinary facilitation",
+      "program and curatorial design",
+      "partnership architecture",
+    ],
+    signals: [
+      "WaveForms",
+      "Creative Producing Program",
+      "Harvard ArtLab x LPCE",
+    ],
   },
 ];
 
@@ -77,6 +105,24 @@ const WORKS = [
   },
 ];
 
+const COLLECTIVE_MODEL = [
+  {
+    title: "Core assembly",
+    body:
+      "Alchemy currently begins with Ravin and Nicholas as a small working assembly: two practices with different vantage points, shared values, and enough overlap to build a language together.",
+  },
+  {
+    title: "Recurring collaborators",
+    body:
+      "The next layer can name trusted producers, artists, technologists, educators, and cultural workers who return across projects without flattening them into a single fixed team.",
+  },
+  {
+    title: "Year One invitation",
+    body:
+      "Before launch, the collective needs a clear invitation for people who may become network, family, or project-specific members of the Alchemy ecology.",
+  },
+];
+
 function PageShell({
   eyebrow,
   title,
@@ -95,12 +141,12 @@ function PageShell({
   return (
     <main className="min-h-screen bg-[#f7f3ea] text-[#151311]">
       <header className="sticky top-0 z-20 border-b border-[#151311]/10 bg-[#f7f3ea]/90 px-5 py-4 backdrop-blur-md md:px-10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <Link href="/" className="flex items-center gap-3">
             <span className="h-3 w-3 bg-[#ff6737]" />
             <span className="text-[0.92rem] font-semibold">Alchemy Unlimited</span>
           </Link>
-          <nav className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 md:gap-x-5">
+          <nav className="flex w-full flex-wrap items-center justify-start gap-x-4 gap-y-2 sm:w-auto sm:justify-end md:gap-x-5">
             {NAV_ITEMS.map((item) => {
               const active = item.href === location;
               return (
@@ -123,7 +169,7 @@ function PageShell({
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-[#72695d]">
             {eyebrow}
           </p>
-          <h1 className="mt-5 max-w-[13ch] text-[3rem] font-semibold leading-[0.98] tracking-[-0.05em] text-[#151311] md:text-[5.2rem]">
+          <h1 className="mt-5 max-w-[13ch] text-[3rem] font-semibold leading-[0.98] tracking-normal text-[#151311] md:text-[5.2rem]">
             {title}
           </h1>
           <p className="mt-6 max-w-2xl text-[1rem] leading-[1.74] text-[#4e473f] md:text-[1.08rem]">
@@ -152,47 +198,86 @@ export function AboutPage() {
     <PageShell
       eyebrow="About"
       title="A collection of humans."
-      intro="Alchemy is being shaped as an assembly of creative producers, collaborators, and recurring partners. The page should make the collective model feel transparent while leaving room for the name and identity to keep evolving."
+      intro="Alchemy is being shaped by Ravin Raori and Nicholas Medvescek as a small assembly of creative producers, artists, strategists, and recurring collaborators. The point is not to look like a fixed agency too quickly, but to make the human structure of the work legible."
       noteKey="about"
     >
       <div className="grid gap-px bg-[#151311]/12 md:grid-cols-2">
         {PEOPLE.map((person) => (
-          <article key={person.name} className="min-h-[18rem] bg-[#fffaf0] p-6 md:p-8">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#786f63]">
-              Person
-            </p>
-            <h2 className="mt-8 text-[2rem] font-semibold leading-none tracking-[-0.04em]">
+          <article key={person.name} className="min-h-[30rem] bg-[#fffaf0] p-6 md:p-8">
+            <div className="flex items-start justify-between gap-6">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#786f63]">
+                Founder
+              </p>
+              <a
+                href={person.siteUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-right text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#c65324] transition-colors duration-150 hover:text-[#151311]"
+              >
+                {person.siteLabel}
+              </a>
+            </div>
+            <h2 className="mt-12 text-[2.25rem] font-semibold leading-none tracking-normal">
               {person.name}
             </h2>
-            <p className="mt-4 max-w-md text-[0.96rem] leading-[1.66] text-[#4e473f]">
+            <p className="mt-3 max-w-md text-[0.9rem] font-semibold uppercase tracking-[0.14em] text-[#786f63]">
               {person.role}
             </p>
-            <p className="mt-8 text-[0.78rem] font-semibold uppercase tracking-[0.16em] text-[#ff6737]">
-              {person.linkLabel}
+            <p className="mt-7 max-w-xl text-[1rem] leading-[1.72] text-[#4e473f]">
+              {person.body}
             </p>
+            <div className="mt-8 grid gap-6 border-t border-[#151311]/12 pt-6 sm:grid-cols-2">
+              <div>
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#786f63]">
+                  Focus
+                </p>
+                <ul className="mt-4 space-y-2">
+                  {person.focus.map((item) => (
+                    <li key={item} className="text-[0.95rem] leading-snug text-[#151311]">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[#786f63]">
+                  Signals
+                </p>
+                <ul className="mt-4 space-y-2">
+                  {person.signals.map((item) => (
+                    <li key={item} className="text-[0.95rem] leading-snug text-[#151311]">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </article>
         ))}
       </div>
 
-      <div className="mt-10 grid gap-8 border-t border-[#151311]/12 pt-10 lg:grid-cols-2">
+      <div className="mt-12 grid gap-8 border-t border-[#151311]/12 pt-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <div>
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[#786f63]">
-            Collaborator layer
+            What sits between them
           </p>
-          <p className="mt-4 max-w-xl text-[1rem] leading-[1.72] text-[#4e473f]">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec ullamcorper
-            nulla non metus auctor fringilla. This section can later list recurring
-            collaborators, network members, or producer cohort family.
+          <p className="mt-4 max-w-xl text-[1.18rem] leading-[1.62] tracking-normal text-[#151311]">
+            Alchemy lives in the overlap: public-facing cultural formats, creative
+            capital, emerging technology, participatory systems, and the translation
+            work needed to make new practices feel usable.
           </p>
         </div>
-        <div>
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[#786f63]">
-            Year One invitation
-          </p>
-          <p className="mt-4 max-w-xl text-[1rem] leading-[1.72] text-[#4e473f]">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. This placeholder
-            should become the near-term invitation for prospective members before launch.
-          </p>
+        <div className="grid gap-px bg-[#151311]/12 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+          {COLLECTIVE_MODEL.map((item) => (
+            <article key={item.title} className="bg-[#fffaf0] p-5">
+              <h2 className="text-[1.22rem] font-semibold leading-tight tracking-normal text-[#151311]">
+                {item.title}
+              </h2>
+              <p className="mt-4 text-[0.92rem] leading-[1.62] text-[#4e473f]">
+                {item.body}
+              </p>
+            </article>
+          ))}
         </div>
       </div>
     </PageShell>
@@ -210,10 +295,10 @@ export function LensesPage() {
       <div className="grid gap-px bg-[#151311]/12 md:grid-cols-2 lg:grid-cols-3">
         {LENSES.map((lens, index) => (
           <article key={lens.title} className="min-h-[20rem] bg-[#fffaf0] p-6 md:p-7">
-            <p className="text-[0.78rem] font-semibold tracking-[-0.03em] text-[#151311]">
+            <p className="text-[0.78rem] font-semibold tracking-normal text-[#151311]">
               0{index + 1}
             </p>
-            <h2 className="mt-10 max-w-[11ch] text-[1.8rem] font-semibold leading-[1.02] tracking-[-0.04em]">
+            <h2 className="mt-10 max-w-[11ch] text-[1.8rem] font-semibold leading-[1.02] tracking-normal">
               {lens.title}
             </h2>
             <p className="mt-5 text-[0.96rem] leading-[1.62] text-[#4e473f]">
@@ -251,7 +336,7 @@ export function WorksPage() {
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#786f63]">
               {work.context}
             </p>
-            <h2 className="mt-16 text-[2.1rem] font-semibold leading-none tracking-[-0.045em]">
+            <h2 className="mt-16 text-[2.1rem] font-semibold leading-none tracking-normal">
               {work.title}
             </h2>
             <p className="mt-5 text-[0.94rem] leading-[1.62] text-[#4e473f]">
@@ -269,7 +354,7 @@ export function WorksPage() {
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#786f63]">
                   {activeWork.context}
                 </p>
-                <h2 className="mt-5 text-[2.4rem] font-semibold leading-none tracking-[-0.05em]">
+                <h2 className="mt-5 text-[2.4rem] font-semibold leading-none tracking-normal">
                   {activeWork.title}
                 </h2>
               </div>
@@ -305,7 +390,7 @@ export function ContactPage() {
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#786f63]">
             Path 1
           </p>
-          <h2 className="mt-12 max-w-[12ch] text-[2.4rem] font-semibold leading-none tracking-[-0.05em]">
+          <h2 className="mt-12 max-w-[12ch] text-[2.4rem] font-semibold leading-none tracking-normal">
             Interested in the collective.
           </h2>
           <p className="mt-5 max-w-md text-[1rem] leading-[1.66] text-[#4e473f]">
@@ -318,7 +403,7 @@ export function ContactPage() {
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#786f63]">
             Path 2
           </p>
-          <h2 className="mt-12 max-w-[12ch] text-[2.4rem] font-semibold leading-none tracking-[-0.05em]">
+          <h2 className="mt-12 max-w-[12ch] text-[2.4rem] font-semibold leading-none tracking-normal">
             Interested in a project.
           </h2>
           <p className="mt-5 max-w-md text-[1rem] leading-[1.66] text-[#4e473f]">
