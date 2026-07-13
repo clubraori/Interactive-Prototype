@@ -179,6 +179,11 @@ const MISSION_LINE_GAP_EM = 0.2;
 const MISSION_INTRO_LINE = "An assembly of creative producers specializing in";
 const MISSION_WORKING_LINE = "working toward";
 const MISSION_ANCHOR_WORD = "for";
+const STUDIO_NOTE_STORAGE_KEY = "alchemy-audience-studio-note";
+const STUDIO_NOTE_PLACEHOLDER =
+  "Write what you notice, want to keep, or might bring into the room.";
+const STUDIO_NOTE_EXPORT_WIDTH = 900;
+const STUDIO_NOTE_EXPORT_HEIGHT = 1200;
 
 const DEFAULT_NOTE_SURFACE: NoteSurfaceState = {
   rotateX: -2,
@@ -527,8 +532,6 @@ export default function Home() {
   ]);
 
   const activeAccent = ACCENT_COLORS[accentIndex];
-  const activeMenuContent =
-    MENU_SECTIONS.find((section) => section.key === activeMenuSection) ?? MENU_SECTIONS[0];
   const currentValues = {
     whatHow: locks.whatHow ?? VALUE_BANKS.whatHow[indices.whatHow],
     who: locks.who ?? VALUE_BANKS.who[indices.who],
@@ -628,11 +631,7 @@ export default function Home() {
           </div>
 
           <div className="lg:hidden">
-            <MenuNoteCard
-              activeMenuSection={activeMenuSection}
-              activeMenuContent={activeMenuContent}
-              setActiveMenuSection={setActiveMenuSection}
-            />
+            <AudienceNoteCard />
           </div>
         </section>
       </div>
@@ -660,10 +659,7 @@ export default function Home() {
             resetStickyNoteSurface();
           }}
         >
-          <MenuNoteCard
-            activeMenuSection={activeMenuSection}
-            activeMenuContent={activeMenuContent}
-            setActiveMenuSection={setActiveMenuSection}
+          <AudienceNoteCard
             onDragHandlePointerDown={startStickyNoteDrag}
             shadowStyle={{
               boxShadow: `${stickyNoteSurface.shadowX}px ${stickyNoteSurface.shadowY}px ${stickyNoteSurface.shadowBlur}px rgba(73, 60, 18, 0.24), 0 14px 24px rgba(20, 16, 10, 0.16)`,
@@ -788,21 +784,167 @@ function MediaFragmentClip({ fragment }: MediaFragmentClipProps) {
   );
 }
 
-interface MenuNoteCardProps {
-  activeMenuSection: MenuSectionKey;
-  activeMenuContent: MenuSectionContent;
-  setActiveMenuSection: (value: MenuSectionKey) => void;
+interface AudienceNoteCardProps {
   onDragHandlePointerDown?: (event: ReactPointerEvent<HTMLDivElement>) => void;
   shadowStyle?: CSSProperties;
 }
 
-function MenuNoteCard({
-  activeMenuSection,
-  activeMenuContent,
-  setActiveMenuSection,
+interface SketchPoint {
+  x: number;
+  y: number;
+}
+
+function AudienceNoteCard({
   onDragHandlePointerDown,
   shadowStyle,
-}: MenuNoteCardProps) {
+}: AudienceNoteCardProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = useRef(false);
+  const lastPointRef = useRef<SketchPoint | null>(null);
+  const [noteText, setNoteText] = useState(() =>
+    typeof window === "undefined"
+      ? ""
+      : window.localStorage.getItem(STUDIO_NOTE_STORAGE_KEY) ?? "",
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(STUDIO_NOTE_STORAGE_KEY, noteText);
+  }, [noteText]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resizeCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
+      const scale = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * scale));
+      canvas.height = Math.max(1, Math.floor(rect.height * scale));
+
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      context.setTransform(scale, 0, 0, scale, 0, 0);
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.strokeStyle = "#211d17";
+      context.lineWidth = 2;
+    };
+
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+    return () => window.removeEventListener("resize", resizeCanvas);
+  }, []);
+
+  const pointFromEvent = (event: ReactPointerEvent<HTMLCanvasElement>): SketchPoint => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  };
+
+  const beginSketch = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    isDrawingRef.current = true;
+    lastPointRef.current = pointFromEvent(event);
+  };
+
+  const drawSketch = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
+    event.preventDefault();
+
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    const previous = lastPointRef.current;
+    const next = pointFromEvent(event);
+    if (!context || !previous) return;
+
+    context.beginPath();
+    context.moveTo(previous.x, previous.y);
+    context.lineTo(next.x, next.y);
+    context.stroke();
+    lastPointRef.current = next;
+  };
+
+  const endSketch = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
+    event.preventDefault();
+    isDrawingRef.current = false;
+    lastPointRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+
+  const clearSketch = () => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+
+    context.save();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.restore();
+  };
+
+  const resetNote = () => {
+    setNoteText("");
+    clearSketch();
+  };
+
+  const downloadNote = () => {
+    if (typeof document === "undefined") return;
+
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = STUDIO_NOTE_EXPORT_WIDTH;
+    exportCanvas.height = STUDIO_NOTE_EXPORT_HEIGHT;
+    const context = exportCanvas.getContext("2d");
+    if (!context) return;
+
+    context.fillStyle = "#fce591";
+    context.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+    context.fillStyle = "rgba(247, 236, 192, 0.92)";
+    context.fillRect(330, 48, 240, 58);
+    context.strokeStyle = "rgba(124, 104, 40, 0.28)";
+    context.lineWidth = 3;
+    context.strokeRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+    context.fillStyle = "#675c35";
+    context.font = "700 28px Inter, Helvetica, Arial, sans-serif";
+    context.fillText("ALCHEMY STUDIO NOTE", 72, 178);
+
+    context.fillStyle = "#211d17";
+    context.font = "700 48px Inter, Helvetica, Arial, sans-serif";
+    context.fillText("What I am taking with me", 72, 268);
+
+    context.font = "400 34px Inter, Helvetica, Arial, sans-serif";
+    wrapCanvasText(
+      context,
+      noteText.trim() || STUDIO_NOTE_PLACEHOLDER,
+      72,
+      350,
+      exportCanvas.width - 144,
+      52,
+      11,
+    );
+
+    const sketchCanvas = canvasRef.current;
+    if (sketchCanvas) {
+      context.fillStyle = "rgba(255, 250, 240, 0.42)";
+      context.fillRect(72, 760, exportCanvas.width - 144, 300);
+      context.drawImage(sketchCanvas, 72, 760, exportCanvas.width - 144, 300);
+    }
+
+    context.fillStyle = "#675c35";
+    context.font = "600 24px Inter, Helvetica, Arial, sans-serif";
+    context.fillText("clubraori.github.io/Interactive-Prototype", 72, 1120);
+
+    const link = document.createElement("a");
+    link.href = exportCanvas.toDataURL("image/png");
+    link.download = "alchemy-studio-note.png";
+    link.click();
+  };
+
   return (
     <div
       data-testid="sticky-note"
@@ -823,43 +965,100 @@ function MenuNoteCard({
           Studio note
         </p>
         <span className="text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-[#8f8256]">
-          {activeMenuContent.label}
+          yours
         </span>
-      </div>
-
-      <div className="space-y-1">
-        {MENU_SECTIONS.map((section) => {
-          const isActive = section.key === activeMenuSection;
-
-          return (
-            <Link
-              key={section.key}
-              href={`/${section.key}`}
-              onMouseEnter={() => setActiveMenuSection(section.key)}
-              onFocus={() => setActiveMenuSection(section.key)}
-              className="flex w-full items-center justify-between border border-transparent px-2 py-2 text-left transition-colors duration-150 hover:bg-white/45"
-              style={{
-                backgroundColor: isActive ? "rgba(255, 255, 255, 0.54)" : "transparent",
-                borderColor: isActive ? "rgba(103, 92, 53, 0.16)" : "transparent",
-              }}
-            >
-              <span className="text-[0.9rem] text-[#2f2a20]">{section.label}</span>
-              <span className="text-[0.68rem] text-[#877b55]">{isActive ? "open" : ""}</span>
-            </Link>
-          );
-        })}
       </div>
 
       <div className="mt-5 border-t border-[rgba(124,104,40,0.16)] pt-4">
         <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#877b55]">
-          {activeMenuContent.eyebrow}
+          Field note
         </p>
-        <p className="mt-3 text-[0.84rem] leading-[1.62] text-[#3d3729]">
-          {activeMenuContent.body}
-        </p>
+        <textarea
+          value={noteText}
+          onChange={(event) => setNoteText(event.target.value)}
+          placeholder={STUDIO_NOTE_PLACEHOLDER}
+          className="mt-3 min-h-[7.5rem] w-full resize-none border border-[rgba(103,92,53,0.18)] bg-[rgba(255,250,240,0.36)] px-3 py-2 text-[0.86rem] leading-[1.5] text-[#211d17] outline-none transition-colors duration-150 placeholder:text-[#887a50] focus:border-[rgba(198,83,36,0.48)] focus:bg-[rgba(255,250,240,0.54)]"
+        />
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#877b55]">
+            Sketch
+          </p>
+          <button
+            type="button"
+            onClick={clearSketch}
+            className="text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[#675c35] transition-colors duration-150 hover:text-[#c65324]"
+          >
+            Clear sketch
+          </button>
+        </div>
+        <canvas
+          ref={canvasRef}
+          aria-label="Sketch on your studio note"
+          className="h-[7.25rem] w-full touch-none border border-[rgba(103,92,53,0.18)] bg-[rgba(255,250,240,0.32)]"
+          onPointerDown={beginSketch}
+          onPointerMove={drawSketch}
+          onPointerUp={endSketch}
+          onPointerCancel={endSketch}
+          onPointerLeave={endSketch}
+        />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={resetNote}
+          className="border border-[rgba(103,92,53,0.18)] bg-[rgba(255,250,240,0.24)] px-3 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[#675c35] transition-colors duration-150 hover:bg-[rgba(255,250,240,0.5)]"
+        >
+          Reset
+        </button>
+        <button
+          type="button"
+          onClick={downloadNote}
+          className="border border-[#c65324] bg-[#c65324] px-3 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[#fffaf0] transition-colors duration-150 hover:border-[#211d17] hover:bg-[#211d17]"
+        >
+          Download
+        </button>
       </div>
     </div>
   );
+}
+
+function wrapCanvasText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines: number,
+) {
+  const words = text.split(/\s+/).filter(Boolean);
+  let line = "";
+  let lineCount = 0;
+
+  words.forEach((word, index) => {
+    if (lineCount >= maxLines) return;
+
+    const testLine = line ? `${line} ${word}` : word;
+    const width = context.measureText(testLine).width;
+    const isLastWord = index === words.length - 1;
+
+    if (width > maxWidth && line) {
+      context.fillText(line, x, y + lineCount * lineHeight);
+      line = word;
+      lineCount += 1;
+    } else {
+      line = testLine;
+    }
+
+    if (isLastWord && lineCount < maxLines) {
+      context.fillText(line, x, y + lineCount * lineHeight);
+      lineCount += 1;
+    }
+  });
 }
 
 interface TypedSlotProps {
